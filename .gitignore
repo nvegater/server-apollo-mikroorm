@@ -1,40 +1,3 @@
-
-Skip to content
-Pull requests
-Issues
-Marketplace
-Explore
-@nvegater
-microsoft /
-TypeScript-Node-Starter
-
-207
-8.4k
-
-    2k
-
-Code
-Issues 54
-Pull requests 17
-Actions
-Projects
-Wiki
-Security
-
-    Insights
-
-TypeScript-Node-Starter/.gitignore
-@Jareechang
-Jareechang Add better logging when setting custom env var using .env
-Latest commit 44bf255 on 16 Mar 2019
-History
-5 contributors
-@bowdenk7
-@Jareechang
-@peterblazejewicz
-@msftgits
-@antamb
-41 lines (32 sloc) 343 Bytes
 lib-cov
 *.seed
 *.log
@@ -76,19 +39,3 @@ dist/**/*
 
 # ignore yarn.lock
 yarn.lock
-
-    © 2020 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Status
-    Help
-
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-
