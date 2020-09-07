@@ -2,6 +2,7 @@
 #Idea
 
 /.idea
+/dist
 
 # dependencies
 /node_modules
