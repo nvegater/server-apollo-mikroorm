@@ -17,6 +17,7 @@ export class Post {
     @Property({type: 'date', onUpdate: () => new Date()})
     updatedAt = new Date();
 
+    // If I dont want to expose a field I can just comment out the field decorator
     @Field()
     @Property({type: 'text'})
     title!: string;
