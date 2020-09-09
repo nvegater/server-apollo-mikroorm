@@ -8,7 +8,8 @@
     "node-javascript": "node dist/index.js",
     "dev-javascript": "nodemon dist/index.js",
     "node-ts": "ts-node src/index.ts",
-    "dev-ts": "nodemon src/index.ts"
+    "dev-ts": "nodemon src/index.ts",
+    "create-migration": "mikro-orm migration:create"
   },
   "keywords": [],
   "author": "",
