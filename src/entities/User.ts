@@ -20,7 +20,7 @@ export class User {
     // If I dont want to expose a field I can just comment out the field decorator
     @Field()
     @Property({type: 'text', unique:true})
-    name!: string;
+    username!: string;
 
     // No field() annotation so no queriable by graphql
     @Property({type: 'text'})

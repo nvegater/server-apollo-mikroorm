@@ -4,24 +4,47 @@ import express from "express";
 import {ApolloServer} from "apollo-server-express";
 import {buildSchema} from "type-graphql";
 import {PostResolver} from "./resolvers/post";
+import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
+import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
+
+async function buildApolloSchemas() {
+
+    const entityResolvers:
+        NonEmptyArray<Function> =
+            [
+                PostResolver
+            ];
+
+    return await buildSchema({
+        resolvers: entityResolvers,
+        validate: false
+    });
+}
+
+async function initAndMigratePostgresMikroOrm() {
+    const postgresMikroORMConnection = await MikroORM.init(mikroConfig);
+    await postgresMikroORMConnection.getMigrator().up();
+    return postgresMikroORMConnection;
+}
 
 const main = async () => {
-    // ORM Config
-    const orm = await MikroORM.init(mikroConfig) // connect to DB
-    await orm.getMigrator().up();
-    // Server config
+
+    const orm:MikroORM = await initAndMigratePostgresMikroOrm()
+
+    const apolloContext = () => (
+            {em: orm.em}
+        );
+
+    const apolloConfig:ApolloServerExpressConfig = {
+        schema: await buildApolloSchemas(),
+        context: apolloContext
+    };
+
     const app = express();
 
-    const apolloServer = new ApolloServer({
-        schema: await buildSchema({
-            resolvers: [PostResolver],
-            validate: false
-        }),
-        context: () => ({ em: orm.em}) // all my resolvers have access to this object now.
-    })
+    new ApolloServer(apolloConfig)
+        .applyMiddleware({app})
 
-
-    apolloServer.applyMiddleware({app})
     app.listen(4000, () => {
         console.log("Server started in localhost: 4000");
     })
