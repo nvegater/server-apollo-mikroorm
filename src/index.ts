@@ -6,13 +6,15 @@ import {buildSchema} from "type-graphql";
 import {PostResolver} from "./resolvers/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
+import {UserResolver} from "./resolvers/user";
 
 async function buildApolloSchemas() {
 
     const entityResolvers:
         NonEmptyArray<Function> =
             [
-                PostResolver
+                PostResolver,
+                UserResolver
             ];
 
     return await buildSchema({
