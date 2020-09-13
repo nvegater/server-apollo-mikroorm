@@ -4,21 +4,21 @@ import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
 import {FieldError} from "./errors";
-import {UsernamePasswordInput} from "./arguments";
+import {LoginInputs} from "./arguments";
 
 @Resolver()
 export class UserResolver {
 
     @Mutation(() => UserResponse)
     async register(
-        @Arg("options") options: UsernamePasswordInput,
+        @Arg("options") inputArgs: LoginInputs,
         @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const hashedPassword = await argon2.hash(options.password)
+        const hashedPassword = await argon2.hash(inputArgs.password)
 
         const user = postgres_mikroORM_EM.create(User, {
-            username: options.username,
+            username: inputArgs.username,
             password: hashedPassword
         });
 
@@ -39,11 +39,11 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async login(
-        @Arg("options") options: UsernamePasswordInput,
+        @Arg("options") inputArgs: LoginInputs,
         @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const user: User | null = await postgres_mikroORM_EM.findOne(User, {username: options.username})
+        const user: User | null = await postgres_mikroORM_EM.findOne(User, {username: inputArgs.username})
 
         if (!user) {
             const noUsernameError: FieldError = {
@@ -53,7 +53,7 @@ export class UserResolver {
             return {errors: [noUsernameError]}
         }
 
-        const validPassword = await argon2.verify(user.password, options.password);
+        const validPassword = await argon2.verify(user.password, inputArgs.password);
 
         if (!validPassword) {
             const wrongPasswordError: FieldError = {
