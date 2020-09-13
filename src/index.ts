@@ -3,10 +3,10 @@ import mikroConfig from "./mikro-orm.config"
 import express from "express";
 import {ApolloServer} from "apollo-server-express";
 import {buildSchema} from "type-graphql";
-import {PostResolver} from "./resolvers/post";
+import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
-import {UserResolver} from "./resolvers/user";
+import {UserResolver} from "./resolvers/User/user";
 
 async function buildApolloSchemas() {
 
