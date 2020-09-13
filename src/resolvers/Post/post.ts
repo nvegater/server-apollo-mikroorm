@@ -1,31 +1,31 @@
 import {Arg, Ctx, Int, Mutation, Query, Resolver} from "type-graphql"
 import {Post} from "../../entities/Post";
-import {MyContext} from "../../types";
+import {ApolloORMContext} from "../../types";
 
 @Resolver()
 export class PostResolver {
     @Query(()=>[Post]) //Duplication for Graphql: Post
     posts(
-        @Ctx() ctx: MyContext
+        @Ctx() ctx: ApolloORMContext
     ) : Promise<Post[] > { //Duplication for Typescript:  Post
-        return ctx.em.find(Post, {});
+        return ctx.postgres_mikroORM_EM.find(Post, {});
     }
 
     @Query(()=>Post, {nullable:true})
     post(
         @Arg('id', ()=>Int) id:number,
-        @Ctx() ctx: MyContext
+        @Ctx() ctx: ApolloORMContext
     ) : Promise<Post | null> {
-        return ctx.em.findOne(Post, {id});
+        return ctx.postgres_mikroORM_EM.findOne(Post, {id});
     }
 
     @Mutation(()=>Post)
     async createPost(
         @Arg('title', ()=>String) title:string,
-        @Ctx() ctx: MyContext
+        @Ctx() ctx: ApolloORMContext
     ) : Promise<Post> {
-        const post = ctx.em.create(Post, {title})
-        await ctx.em.persistAndFlush(post)
+        const post = ctx.postgres_mikroORM_EM.create(Post, {title})
+        await ctx.postgres_mikroORM_EM.persistAndFlush(post)
         return post;
     }
 
@@ -33,15 +33,15 @@ export class PostResolver {
     async updatePost(
         @Arg('id', ()=>Int) id:number,
         @Arg('title', ()=>String, {nullable:true}) title:string,
-        @Ctx() ctx: MyContext
+        @Ctx() ctx: ApolloORMContext
     ) : Promise<Post | null> {
-        const post = await ctx.em.findOne(Post, {id})
+        const post = await ctx.postgres_mikroORM_EM.findOne(Post, {id})
         if (!post){
             return null
         }
         if (typeof title !== "undefined"){
             post.title = title;
-            await ctx.em.persistAndFlush(post)
+            await ctx.postgres_mikroORM_EM.persistAndFlush(post)
         }
         return post;
     }
@@ -49,9 +49,9 @@ export class PostResolver {
     @Mutation(()=>Boolean)
     async deletePost(
         @Arg('id', () => Int) id:number,
-        @Ctx() ctx: MyContext
+        @Ctx() ctx: ApolloORMContext
     ) : Promise<boolean> {
-        await ctx.em.nativeDelete(Post, {id})
+        await ctx.postgres_mikroORM_EM.nativeDelete(Post, {id})
         return true;
     }
 }

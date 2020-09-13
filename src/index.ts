@@ -7,6 +7,7 @@ import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
+import {ApolloORMContext} from "./types";
 
 async function buildApolloSchemas() {
 
@@ -29,17 +30,19 @@ async function initAndMigratePostgresMikroOrm() {
     return postgresMikroORMConnection;
 }
 
-const main = async () => {
+const buildApolloContext = (orm:MikroORM):ApolloORMContext => (
+    {
+        postgres_mikroORM_EM: orm.em
+    }
+);
+
+const startApolloORMServer = async () => {
 
     const orm:MikroORM = await initAndMigratePostgresMikroOrm()
 
-    const apolloContext = () => (
-            {em: orm.em}
-        );
-
     const apolloConfig:ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
-        context: apolloContext
+        context: buildApolloContext(orm)
     };
 
     const app = express();
@@ -52,6 +55,6 @@ const main = async () => {
     })
 }
 
-main().catch((err)=>{
+startApolloORMServer().catch((err)=>{
     console.log(err)
 });
