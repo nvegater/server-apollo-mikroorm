@@ -3,8 +3,24 @@ import {ApolloORMContext} from "../../types";
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
-import {FieldError} from "./errors";
+import {FieldError, InputError} from "./errors";
 import {LoginInputs} from "./arguments";
+
+const validateInputsOrReturnError = (inputs: LoginInputs): (InputError | true) => {
+    if (inputs.username.length <= 2) {
+        return {
+            field: inputs.username,
+            message: "username too short"
+        }
+    }
+    if (inputs.password.length <= 2) {
+        return {
+            field: inputs.password,
+            message: "the password is bad"
+        }
+    }
+    return true
+}
 
 @Resolver()
 export class UserResolver {
@@ -14,6 +30,12 @@ export class UserResolver {
         @Arg("options") inputArgs: LoginInputs,
         @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
     ): Promise<UserResponse> {
+
+        const loginValidation = validateInputsOrReturnError(inputArgs);
+
+        if (!loginValidation) {
+            return {errors: loginValidation}
+        }
 
         const hashedPassword = await argon2.hash(inputArgs.password)
 
