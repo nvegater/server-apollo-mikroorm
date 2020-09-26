@@ -1,5 +1,4 @@
-import {EntityManager} from "@mikro-orm/core/dist/EntityManager";
-
+import {EntityManager} from "@mikro-orm/core";
 /**
  * Cross-App types
  * **/

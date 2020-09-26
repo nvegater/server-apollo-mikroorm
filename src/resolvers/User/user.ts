@@ -6,7 +6,8 @@ import {UserResponse} from "./userResponse";
 import {FieldError, InputError} from "./errors";
 import {LoginInputs} from "./arguments";
 
-const validateInputsOrReturnError = (inputs: LoginInputs): (InputError | true) => {
+const validateInputs = (inputs: LoginInputs): (InputError | true) => {
+    // TODO checkout user Input validation libraries.
     if (inputs.username.length <= 2) {
         return {
             field: inputs.username,
@@ -31,10 +32,10 @@ export class UserResolver {
         @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const loginValidation = validateInputsOrReturnError(inputArgs);
+        const userInputs = validateInputs(inputArgs);
 
-        if (!loginValidation) {
-            return {errors: loginValidation}
+        if (!userInputs) {
+            return {errors: userInputs}
         }
 
         const hashedPassword = await argon2.hash(inputArgs.password)
