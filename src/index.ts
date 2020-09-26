@@ -1,5 +1,5 @@
 import {MikroORM} from "@mikro-orm/core"
-import mikroConfig from "./mikro-orm.config"
+import mikroPostgresConfiguration from "./mikro-orm.config"
 import express from "express";
 import {ApolloServer} from "apollo-server-express";
 import {buildSchema} from "type-graphql";
@@ -25,7 +25,7 @@ async function buildApolloSchemas() {
 }
 
 async function initAndMigratePostgresMikroOrm() {
-    const postgresMikroORMConnection = await MikroORM.init(mikroConfig);
+    const postgresMikroORMConnection = await MikroORM.init(mikroPostgresConfiguration);
     await postgresMikroORMConnection.getMigrator().up();
     return postgresMikroORMConnection;
 }
@@ -55,6 +55,7 @@ const startApolloORMServer = async () => {
     })
 }
 
-startApolloORMServer().catch((err)=>{
+startApolloORMServer()
+    .catch((err)=>{
     console.log(err)
 });
