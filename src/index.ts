@@ -11,6 +11,7 @@ import redis from 'redis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis from 'connect-redis';
 import {redisCookieConfig} from "./redis-config";
+import {ApolloORMContext} from "./types";
 
 async function buildApolloSchemas() {
 
@@ -64,8 +65,8 @@ const start_server = async () => {
 
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
-        context: ({req, res}) =>
-            ({postgres_mikroORM_EM: ormConnection.em, req, res})
+        context: ({req, res}):ApolloORMContext =>
+            ({postgresORM:ormConnection.em, req, res})
     };
     new ApolloServer(apolloConfig)
         .applyMiddleware({app})
