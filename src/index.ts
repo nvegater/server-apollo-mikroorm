@@ -9,9 +9,9 @@ import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
 import {ApolloORMContext} from "./types";
 import redis from 'redis';
-import session from 'express-session';
+import session, {SessionOptions} from 'express-session';
 import connectRedis from 'connect-redis';
-import {_prod_} from "./constants";
+import {redisCookieConfig} from "./redis-config";
 
 async function buildApolloSchemas() {
 
@@ -51,30 +51,22 @@ const startApolloORMServer = async () => {
 
     const app = express();
 
-    // Order from express middleware matters.
-    // Redis should come before Apolo
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
 
+    const sessionOptions:SessionOptions = {
+        name: 'qid',
+        store: new RedisStore({
+            client: redisClient,
+            disableTouch: true,
+        }),
+        cookie: redisCookieConfig,
+        secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
+        resave: false,
+    };
+
     app.use(
-        session({
-            name: 'qid',
-            store: new RedisStore({
-                    client: redisClient,
-                    disableTouch: true,
-                }),
-            cookie: {
-                maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
-                // Its in MS but I want it in years. convert to years.
-                // Therefore: 1000ms = 1s * (60 sec = 1min) * 1 hour * 1day * 1 year * 10 = 10 years
-                httpOnly: true,
-                //This makes cookie not accessible in frontend
-                sameSite: 'lax', // csrf related.
-                secure: _prod_ // cookie only works in https when we are in production
-            },
-            secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign with env variable
-            resave: false,
-        })
+        session(sessionOptions)
     )
 
     new ApolloServer(apolloConfig)
