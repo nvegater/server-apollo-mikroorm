@@ -29,7 +29,7 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async register(
         @Arg("options") inputArgs: LoginInputs,
-        @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
+        @Ctx() {postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
         const userInputs = validateInputs(inputArgs);
@@ -40,15 +40,15 @@ export class UserResolver {
 
         const hashedPassword = await argon2.hash(inputArgs.password)
 
-        const user = postgres_mikroORM_EM.create(User, {
+        const user = postgresORM.create(User, {
             username: inputArgs.username,
             password: hashedPassword
         });
 
-        const userExists = await postgres_mikroORM_EM.findOne(User, {username: user.username});
+        const userExists = await postgresORM.findOne(User, {username: user.username});
 
         if (!userExists) {
-            await postgres_mikroORM_EM.persistAndFlush(user);
+            await postgresORM.persistAndFlush(user);
         } else {
             const existingUserError: FieldError = {
                 field: user.username,
@@ -63,10 +63,10 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async login(
         @Arg("options") inputArgs: LoginInputs,
-        @Ctx() {postgres_mikroORM_EM}: ApolloORMContext
+        @Ctx() {postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const user: User | null = await postgres_mikroORM_EM.findOne(User, {username: inputArgs.username})
+        const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
 
         if (!user) {
             const noUsernameError: FieldError = {

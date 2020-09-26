@@ -7,7 +7,6 @@ import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
-import {ApolloORMContext} from "./types";
 import redis from 'redis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis from 'connect-redis';
@@ -17,10 +16,10 @@ async function buildApolloSchemas() {
 
     const entityResolvers:
         NonEmptyArray<Function> =
-            [
-                PostResolver,
-                UserResolver
-            ];
+        [
+            PostResolver,
+            UserResolver
+        ];
 
     return await buildSchema({
         resolvers: entityResolvers,
@@ -28,30 +27,16 @@ async function buildApolloSchemas() {
     });
 }
 
-async function connectMikroORM() {
-    const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
-    await ormConnection.getMigrator().up();
-    return ormConnection;
-}
+const start_server = async () => {
 
-const buildApolloContext = (orm:MikroORM):ApolloORMContext => (
-    {
-        postgres_mikroORM_EM: orm.em
-    }
-);
-
-const startApolloORMServer = async () => {
-
+    // Middlewares: Redis, Apollo
     const app = express();
-    // 3 middlewares: mikroORM, Redis, Apollo
 
-    // 1. MikroORM
-    const orm:MikroORM = await connectMikroORM()
+    // 1. Redis -----
 
-    // 2. Redis
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
-    const sessionOptions:SessionOptions = {
+    const sessionOptions: SessionOptions = {
         name: 'qid',
         store: new RedisStore({
             client: redisClient,
@@ -61,26 +46,39 @@ const startApolloORMServer = async () => {
         secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
         resave: false,
     };
+
     app.use(
         session(sessionOptions)
     )
+    // ----------------
 
-    // 3. Apollo
-    const apolloConfig:ApolloServerExpressConfig = {
+
+    // 2. Apollo -----
+
+    //      2.1 MikroORM
+
+    const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
+    await ormConnection.getMigrator().up();
+
+    //      2.2 Apollo with Entity manager and Schemas
+
+    const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
-        context: buildApolloContext(orm)
+        context: ({req, res}) =>
+            ({postgres_mikroORM_EM: ormConnection.em, req, res})
     };
     new ApolloServer(apolloConfig)
         .applyMiddleware({app})
 
-    // -----
+
+    // ----------------
 
     app.listen(4000, () => {
         console.log("Server started in localhost: 4000");
     })
 }
 
-startApolloORMServer()
-    .catch((err)=>{
-    console.log(err)
-});
+start_server()
+    .catch((err) => {
+        console.log(err)
+    });

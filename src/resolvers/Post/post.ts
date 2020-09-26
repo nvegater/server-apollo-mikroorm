@@ -8,7 +8,7 @@ export class PostResolver {
     posts(
         @Ctx() ctx: ApolloORMContext
     ) : Promise<Post[] > { //Duplication for Typescript:  Post
-        return ctx.postgres_mikroORM_EM.find(Post, {});
+        return ctx.postgresORM.find(Post, {});
     }
 
     @Query(()=>Post, {nullable:true})
@@ -16,7 +16,7 @@ export class PostResolver {
         @Arg('id', ()=>Int) id:number,
         @Ctx() ctx: ApolloORMContext
     ) : Promise<Post | null> {
-        return ctx.postgres_mikroORM_EM.findOne(Post, {id});
+        return ctx.postgresORM.findOne(Post, {id});
     }
 
     @Mutation(()=>Post)
@@ -24,8 +24,8 @@ export class PostResolver {
         @Arg('title', ()=>String) title:string,
         @Ctx() ctx: ApolloORMContext
     ) : Promise<Post> {
-        const post = ctx.postgres_mikroORM_EM.create(Post, {title})
-        await ctx.postgres_mikroORM_EM.persistAndFlush(post)
+        const post = ctx.postgresORM.create(Post, {title})
+        await ctx.postgresORM.persistAndFlush(post)
         return post;
     }
 
@@ -35,13 +35,13 @@ export class PostResolver {
         @Arg('title', ()=>String, {nullable:true}) title:string,
         @Ctx() ctx: ApolloORMContext
     ) : Promise<Post | null> {
-        const post = await ctx.postgres_mikroORM_EM.findOne(Post, {id})
+        const post = await ctx.postgresORM.findOne(Post, {id})
         if (!post){
             return null
         }
         if (typeof title !== "undefined"){
             post.title = title;
-            await ctx.postgres_mikroORM_EM.persistAndFlush(post)
+            await ctx.postgresORM.persistAndFlush(post)
         }
         return post;
     }
@@ -51,7 +51,7 @@ export class PostResolver {
         @Arg('id', () => Int) id:number,
         @Ctx() ctx: ApolloORMContext
     ) : Promise<boolean> {
-        await ctx.postgres_mikroORM_EM.nativeDelete(Post, {id})
+        await ctx.postgresORM.nativeDelete(Post, {id})
         return true;
     }
 }
