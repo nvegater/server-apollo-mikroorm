@@ -28,10 +28,10 @@ async function buildApolloSchemas() {
     });
 }
 
-async function initAndMigratePostgresMikroOrm() {
-    const postgresMikroORMConnection = await MikroORM.init(mikroPostgresConfiguration);
-    await postgresMikroORMConnection.getMigrator().up();
-    return postgresMikroORMConnection;
+async function connectMikroORM() {
+    const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
+    await ormConnection.getMigrator().up();
+    return ormConnection;
 }
 
 const buildApolloContext = (orm:MikroORM):ApolloORMContext => (
@@ -42,18 +42,15 @@ const buildApolloContext = (orm:MikroORM):ApolloORMContext => (
 
 const startApolloORMServer = async () => {
 
-    const orm:MikroORM = await initAndMigratePostgresMikroOrm()
-
-    const apolloConfig:ApolloServerExpressConfig = {
-        schema: await buildApolloSchemas(),
-        context: buildApolloContext(orm)
-    };
-
     const app = express();
+    // 3 middlewares: mikroORM, Redis, Apollo
 
+    // 1. MikroORM
+    const orm:MikroORM = await connectMikroORM()
+
+    // 2. Redis
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
-
     const sessionOptions:SessionOptions = {
         name: 'qid',
         store: new RedisStore({
@@ -64,13 +61,19 @@ const startApolloORMServer = async () => {
         secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
         resave: false,
     };
-
     app.use(
         session(sessionOptions)
     )
 
+    // 3. Apollo
+    const apolloConfig:ApolloServerExpressConfig = {
+        schema: await buildApolloSchemas(),
+        context: buildApolloContext(orm)
+    };
     new ApolloServer(apolloConfig)
         .applyMiddleware({app})
+
+    // -----
 
     app.listen(4000, () => {
         console.log("Server started in localhost: 4000");
