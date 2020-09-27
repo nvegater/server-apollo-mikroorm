@@ -39,7 +39,7 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async register(
         @Arg("options") inputArgs: LoginInputs,
-        @Ctx() {postgresORM}: ApolloORMContext
+        @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
         const userInputs = validateInputs(inputArgs);
@@ -66,6 +66,9 @@ export class UserResolver {
             }
             return {errors: [existingUserError]}
         }
+
+        // Login right after registering.
+        req.session!.userId = user.id;
 
         return {user: user}
     }
