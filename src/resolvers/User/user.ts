@@ -1,4 +1,4 @@
-import {Arg, Ctx, Mutation, Resolver} from "type-graphql"
+import {Arg, Ctx, Mutation, Query, Resolver} from "type-graphql"
 import {ApolloORMContext} from "../../types";
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
@@ -25,6 +25,16 @@ const validateInputs = (inputs: LoginInputs): (InputError | true) => {
 
 @Resolver()
 export class UserResolver {
+
+    @Query(() => User, {nullable: true}) //Duplication for Graphql: Post
+    async me(
+        @Ctx() {req, postgresORM}: ApolloORMContext
+    ) {
+        console.log(req.session!.userId)
+        return req.session!.userId ?
+            await postgresORM.findOne(User, {id: req.session!.userId}) :
+            null;
+    }
 
     @Mutation(() => UserResponse)
     async register(
@@ -63,7 +73,7 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async login(
         @Arg("options") inputArgs: LoginInputs,
-        @Ctx() {postgresORM}: ApolloORMContext
+        @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
         const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
@@ -85,6 +95,22 @@ export class UserResolver {
             }
             return {errors: [wrongPasswordError]}
         }
+
+        /*
+        * store user data between HTTP requests (associate a request to any other request).
+        * Cookies and URL parameters transport data between the client and the server.
+        * But they are both readable and on the client side.
+
+        * * Sessions solve exactly this problem.
+
+        * * You assign the client an ID and it makes all further requests using that ID.
+        * Information associated with the client is stored on the server linked to this ID.
+        * */
+        // context is generated again with every new request.
+        // context is accessible within the resolvers
+        // The request header contains session object, thanks to express-session
+
+        req.session!.userId = user.id;
 
         return {user: user}
     }
