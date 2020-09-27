@@ -34,6 +34,15 @@ const start_server = async () => {
     const app = express();
 
     // 1. Redis -----
+    // For storing user session securely in a cookie.
+    // req.session!.userId = user.id; --> {userId:1} is send to Redis DB
+    // Redis maps the object to a key:
+    // key1slk ---> {userId:1}
+    // express-session sets cookie with signed version of "key1slk"
+    // signFunction ( "key1slk" ) = alskdjiwalsjid
+    // when request is sent, the signed "alskdjiwalsjid" is sent to Redis Server
+    // un_signFunction ( "alskdjiwalsjid" ) = key1slk
+    // key1slk ---> {userId:1}
 
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
