@@ -12,6 +12,7 @@ import session, {SessionOptions} from 'express-session';
 import connectRedis from 'connect-redis';
 import {redisCookieConfig} from "./redis-config";
 import {ApolloORMContext} from "./types";
+import cors from "cors"
 
 async function buildApolloSchemas() {
 
@@ -32,6 +33,10 @@ const start_server = async () => {
 
     // Middlewares: Redis, Apollo
     const app = express();
+    app.use(cors({
+        origin: "http://localhost:3000/",
+        credentials: true
+    }))
 
     // 1. Redis -----
     // For storing user session securely in a cookie.
@@ -78,7 +83,7 @@ const start_server = async () => {
             ({postgresORM:ormConnection.em, req, res})
     };
     new ApolloServer(apolloConfig)
-        .applyMiddleware({app})
+        .applyMiddleware({app, cors:false})
 
 
     // ----------------
