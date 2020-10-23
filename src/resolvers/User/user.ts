@@ -11,13 +11,13 @@ const validateInputs = (inputs: LoginInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
     if (inputs.username.length <= 2) {
         inputErrors.push({
-            field: "username",
+            field: Object.keys(inputs)[0],
             message: "username too short"
         })
     }
     if (inputs.password.length <= 2) {
         inputErrors.push({
-            field: inputs.password,
+            field: Object.keys(inputs)[1],
             message: "the password is bad"
         })
     }
