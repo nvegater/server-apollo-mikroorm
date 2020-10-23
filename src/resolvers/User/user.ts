@@ -3,24 +3,25 @@ import {ApolloORMContext} from "../../types";
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
-import {FieldError, InputError} from "./errors";
+import {FieldError} from "./errors";
 import {LoginInputs} from "./arguments";
 
-const validateInputs = (inputs: LoginInputs): (InputError | true) => {
+const validateInputs = (inputs: LoginInputs): FieldError[] => {
     // TODO checkout user Input validation libraries.
+    let inputErrors: FieldError[] = [];
     if (inputs.username.length <= 2) {
-        return {
-            field: inputs.username,
+        inputErrors.push({
+            field: "username",
             message: "username too short"
-        }
+        })
     }
     if (inputs.password.length <= 2) {
-        return {
+        inputErrors.push({
             field: inputs.password,
             message: "the password is bad"
-        }
+        })
     }
-    return true
+    return inputErrors;
 }
 
 @Resolver()
@@ -42,10 +43,10 @@ export class UserResolver {
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const userInputs = validateInputs(inputArgs);
+        const inputError: FieldError[] = validateInputs(inputArgs);
 
-        if (!userInputs) {
-            return {errors: userInputs}
+        if (inputError.length > 0) {
+            return {errors: inputError}
         }
 
         const hashedPassword = await argon2.hash(inputArgs.password)
@@ -61,7 +62,7 @@ export class UserResolver {
             await postgresORM.persistAndFlush(user);
         } else {
             const existingUserError: FieldError = {
-                field: user.username,
+                field: "username",
                 message: "User already exists"
             }
             return {errors: [existingUserError]}

@@ -10,6 +10,3 @@ export class FieldError {
     @Field()
     message: string;
 }
-
-@ObjectType()
-export class InputError extends FieldError{}
