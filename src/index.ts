@@ -33,10 +33,12 @@ const start_server = async () => {
 
     // Middlewares: Redis, Apollo
     const app = express();
-    app.use(cors({
-        origin: "http://localhost:3000/",
-        credentials: true
-    }))
+    app.use(
+        cors({
+            origin: "http://localhost:3000",
+            credentials: true
+        })
+    )
 
     // 1. Redis -----
     // For storing user session securely in a cookie.
@@ -83,7 +85,10 @@ const start_server = async () => {
             ({postgresORM:ormConnection.em, req, res})
     };
     new ApolloServer(apolloConfig)
-        .applyMiddleware({app, cors:false})
+        .applyMiddleware({
+            app,
+            cors: false
+        })
 
 
     // ----------------
