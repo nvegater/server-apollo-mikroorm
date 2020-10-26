@@ -4,21 +4,43 @@ import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
 import {FieldError} from "./errors";
-import {LoginInputs} from "./arguments";
+import {CredentialsInputs} from "./arguments";
 
-const validateInputs = (inputs: LoginInputs): FieldError[] => {
+const validateInputs = (inputs: CredentialsInputs): FieldError[] => {
     // TODO checkout user Input validation libraries.
     let inputErrors: FieldError[] = [];
-    if (inputs.username.length <= 2) {
+
+    const USERNAME_GIVEN = inputs.username.length > 0;
+    const USERNAME_SHORT = inputs.username.length <= 2;
+
+    if (USERNAME_GIVEN && USERNAME_SHORT) {
         inputErrors.push({
             field: Object.keys(inputs)[0],
             message: "username too short"
         })
     }
-    if (inputs.password.length <= 2) {
+
+    if (!USERNAME_GIVEN) {
+        inputErrors.push({
+            field: Object.keys(inputs)[0],
+            message: "username missing"
+        })
+    }
+
+    const PASSWORD_GIVEN = inputs.password.length > 0;
+    const PASSWORD_SHORT = inputs.password.length <= 2;
+
+    if (PASSWORD_GIVEN && PASSWORD_SHORT) {
         inputErrors.push({
             field: Object.keys(inputs)[1],
-            message: "the password is bad"
+            message: "try a better password"
+        })
+    }
+
+    if (!PASSWORD_GIVEN) {
+        inputErrors.push({
+            field: Object.keys(inputs)[1],
+            message: "password missing"
         })
     }
     return inputErrors;
@@ -39,7 +61,7 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async register(
-        @Arg("options") inputArgs: LoginInputs,
+        @Arg("options") inputArgs: CredentialsInputs,
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
@@ -68,6 +90,7 @@ export class UserResolver {
             return {errors: [existingUserError]}
         }
 
+        console.log("User after register: ", user)
         // Login right after registering.
         req.session!.userId = user.id;
 
@@ -76,7 +99,7 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async login(
-        @Arg("options") inputArgs: LoginInputs,
+        @Arg("options") inputArgs: CredentialsInputs,
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
