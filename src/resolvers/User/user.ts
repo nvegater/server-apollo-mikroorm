@@ -129,40 +129,22 @@ export class UserResolver {
         }
 
         const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
-        if (!user) {
-            inputErrors.push({
-                field: Object.keys(inputArgs)[0],
-                message: "that username doesnt exist"
-            })
-            return {errors: inputErrors}
-        }
+        // if an user is returned, verify given password.
+        const userPassMatch = user !== null ? await argon2.verify(user.password, inputArgs.password) : false;
 
-        const validPassword = await argon2.verify(user.password, inputArgs.password);
-        if (!validPassword) {
+        if (!user || !userPassMatch) {
             inputErrors.push({
                 field: Object.keys(inputArgs)[1],
-                message: "wrong password"
+                message: "the username or password is invalid"
             })
             return {errors: inputErrors}
+        } else {
+            // Us/Pass valid --> Client deserves an id.
+            // Access Session object in request header.
+            // Start a unique session by setting an id in the request header
+            req.session!.userId = user.id;
+            return {user: user}
         }
-
-        /*
-        * store user data between HTTP requests (associate a request to any other request).
-        * Cookies and URL parameters transport data between the client and the server.
-        * But they are both readable and on the client side.
-
-        * * Sessions solve exactly this problem.
-
-        * * You assign the client an ID and it makes all further requests using that ID.
-        * Information associated with the client is stored on the server linked to this ID.
-        * */
-        // context is generated again with every new request.
-        // context is accessible within the resolvers
-        // The request header contains session object, thanks to express-session
-
-        req.session!.userId = user.id;
-
-        return {user: user}
     }
 
 }
