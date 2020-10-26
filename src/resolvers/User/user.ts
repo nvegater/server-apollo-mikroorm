@@ -6,8 +6,7 @@ import {UserResponse} from "./userResponse";
 import {FieldError} from "./errors";
 import {CredentialsInputs} from "./arguments";
 
-const validateInputs = (inputs: CredentialsInputs): FieldError[] => {
-    // TODO checkout user Input validation libraries.
+const validateInputsRegister = (inputs: CredentialsInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
 
     const USERNAME_GIVEN = inputs.username.length > 0;
@@ -46,6 +45,27 @@ const validateInputs = (inputs: CredentialsInputs): FieldError[] => {
     return inputErrors;
 }
 
+const validateInputsLogin = (inputs: CredentialsInputs): FieldError[] => {
+    let inputErrors: FieldError[] = [];
+
+    const USERNAME_GIVEN = inputs.username.length > 0;
+    if (!USERNAME_GIVEN) {
+        inputErrors.push({
+            field: Object.keys(inputs)[0],
+            message: "username missing"
+        })
+    }
+
+    const PASSWORD_GIVEN = inputs.password.length > 0;
+    if (!PASSWORD_GIVEN) {
+        inputErrors.push({
+            field: Object.keys(inputs)[1],
+            message: "password missing"
+        })
+    }
+    return inputErrors;
+}
+
 @Resolver()
 export class UserResolver {
 
@@ -65,10 +85,10 @@ export class UserResolver {
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const inputError: FieldError[] = validateInputs(inputArgs);
+        const inputErrors: FieldError[] = validateInputsRegister(inputArgs);
 
-        if (inputError.length > 0) {
-            return {errors: inputError}
+        if (inputErrors.length > 0) {
+            return {errors: inputErrors}
         }
 
         const hashedPassword = await argon2.hash(inputArgs.password)
@@ -83,11 +103,11 @@ export class UserResolver {
         if (!userExists) {
             await postgresORM.persistAndFlush(user);
         } else {
-            const existingUserError: FieldError = {
-                field: "username",
+            inputErrors.push({
+                field: Object.keys(inputArgs)[0],
                 message: "User already exists"
-            }
-            return {errors: [existingUserError]}
+            })
+            return {errors: inputErrors}
         }
 
         console.log("User after register: ", user)
@@ -103,24 +123,27 @@ export class UserResolver {
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
 
-        const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
+        const inputErrors: FieldError[] = validateInputsLogin(inputArgs);
+        if (inputErrors.length > 0) {
+            return {errors: inputErrors}
+        }
 
+        const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
         if (!user) {
-            const noUsernameError: FieldError = {
-                field: 'username',
+            inputErrors.push({
+                field: Object.keys(inputArgs)[0],
                 message: "that username doesnt exist"
-            }
-            return {errors: [noUsernameError]}
+            })
+            return {errors: inputErrors}
         }
 
         const validPassword = await argon2.verify(user.password, inputArgs.password);
-
         if (!validPassword) {
-            const wrongPasswordError: FieldError = {
-                field: "password",
+            inputErrors.push({
+                field: Object.keys(inputArgs)[1],
                 message: "wrong password"
-            }
-            return {errors: [wrongPasswordError]}
+            })
+            return {errors: inputErrors}
         }
 
         /*
