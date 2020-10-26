@@ -134,6 +134,10 @@ export class UserResolver {
 
         if (!user || !userPassMatch) {
             inputErrors.push({
+                field: Object.keys(inputArgs)[0],
+                message: "-"
+            })
+            inputErrors.push({
                 field: Object.keys(inputArgs)[1],
                 message: "the username or password is invalid"
             })
