@@ -34,6 +34,12 @@ const start_server = async () => {
 
     // Middlewares: Redis, Apollo
     const app = express();
+    app.use(
+        cors({
+            origin: ["http://localhost:3000","http://localhost:4000", "http://localhost:4000/graphql"],
+            credentials: true
+        })
+    )
 
     // 1. Redis -----
     // For storing user session securely in a cookie.
@@ -80,20 +86,20 @@ const start_server = async () => {
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
         context: ({req, res}):ApolloORMContext =>
-            ({postgresORM:ormConnection.em, req, res})
+            ({postgresORM:ormConnection.em, req, res}),
+        playground:
+            process.env.NODE_ENV === 'production'
+                ? false
+                : {
+                    settings: {
+                        'request.credentials': 'include',
+                    },
+                },
     };
-    app.use(
-        cors({
-            origin: ["http://localhost:3000","http://localhost:4000/graphql"],
-            credentials: true
-        })
-    )
+
 
     new ApolloServer(apolloConfig)
-        .applyMiddleware({
-            app,
-            cors: false
-        })
+        .applyMiddleware({ app, path: '/graphql', cors: false })
 
 
     // ----------------
