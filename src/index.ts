@@ -13,6 +13,7 @@ import connectRedis from 'connect-redis';
 import {redisCookieConfig} from "./redis-config";
 import {ApolloORMContext} from "./types";
 import cors from "cors"
+import {v4 as uuidv4} from "uuid";
 
 async function buildApolloSchemas() {
 
@@ -33,12 +34,6 @@ const start_server = async () => {
 
     // Middlewares: Redis, Apollo
     const app = express();
-    app.use(
-        cors({
-            origin: "http://localhost:3000",
-            credentials: true
-        })
-    )
 
     // 1. Redis -----
     // For storing user session securely in a cookie.
@@ -54,7 +49,10 @@ const start_server = async () => {
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
     const sessionOptions: SessionOptions = {
-        name: 'qid',
+        name: '_qid',
+        genid: (_req) => {
+            return uuidv4()
+        },
         store: new RedisStore({
             client: redisClient,
             disableTouch: true,
@@ -84,6 +82,13 @@ const start_server = async () => {
         context: ({req, res}):ApolloORMContext =>
             ({postgresORM:ormConnection.em, req, res})
     };
+    app.use(
+        cors({
+            origin: ["http://localhost:3000","http://localhost:4000/graphql"],
+            credentials: true
+        })
+    )
+
     new ApolloServer(apolloConfig)
         .applyMiddleware({
             app,
