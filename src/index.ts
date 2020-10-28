@@ -41,17 +41,6 @@ const start_server = async () => {
         })
     )
 
-    // 1. Redis -----
-    // For storing user session securely in a cookie.
-    // req.session!.userId = user.id; --> {userId:1} is send to Redis DB
-    // Redis maps the object to a key:
-    // key1slk ---> {userId:1}
-    // express-session sets cookie with signed version of "key1slk"
-    // signFunction ( "key1slk" ) = alskdjiwalsjid
-    // when request is sent, the signed "alskdjiwalsjid" is sent to Redis Server
-    // un_signFunction ( "alskdjiwalsjid" ) = key1slk
-    // key1slk ---> {userId:1}
-
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
     const sessionOptions: SessionOptions = {
@@ -67,42 +56,35 @@ const start_server = async () => {
         secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
         resave: false,
     };
-
     app.use(
         session(sessionOptions)
     )
-    // ----------------
-
-
-    // 2. Apollo -----
-
-    //      2.1 MikroORM
 
     const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
     await ormConnection.getMigrator().up();
 
-    //      2.2 Apollo with Entity manager and Schemas
-
+    const includeCredentials = {
+        settings: {
+            //default is 'omit'
+            'request.credentials': 'include',
+        },
+    };
+    const isDevMode = process.env.NODE_ENV === 'production' ? false : includeCredentials;
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
         context: ({req, res}):ApolloORMContext =>
             ({postgresORM:ormConnection.em, req, res}),
-        playground:
-            process.env.NODE_ENV === 'production'
-                ? false
-                : {
-                    settings: {
-                        'request.credentials': 'include',
-                    },
-                },
+        playground: isDevMode,
     };
 
-
+    const apolloMiddlewareConfig = {
+        app, // Http -express server
+        path: '/graphql', // Server listen on this endpoint
+        cors: false // remove Apollo Cors-config, since there is one already
+    };
     new ApolloServer(apolloConfig)
-        .applyMiddleware({ app, path: '/graphql', cors: false })
+        .applyMiddleware(apolloMiddlewareConfig)
 
-
-    // ----------------
 
     app.listen(4000, () => {
         console.log("Server started in localhost: 4000");
