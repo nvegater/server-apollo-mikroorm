@@ -14,6 +14,7 @@ import {redisCookieConfig} from "./redis-config";
 import {ApolloORMContext} from "./types";
 import cors from "cors"
 import {v4 as uuidv4} from "uuid";
+import {PlaygroundConfig} from "apollo-server-core/src/playground";
 
 async function buildApolloSchemas() {
 
@@ -63,18 +64,21 @@ const start_server = async () => {
     const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
     await ormConnection.getMigrator().up();
 
-    const includeCredentials = {
-        settings: {
-            //default is 'omit'
-            'request.credentials': 'include',
-        },
-    };
-    const isDevMode = process.env.NODE_ENV === 'production' ? false : includeCredentials;
+    // Always same credentials for multiple-playground requests.
+    const devMode:PlaygroundConfig = process.env.NODE_ENV === 'production'
+        ? false
+        : {
+            settings: {
+                //default is 'omit'
+                'request.credentials': 'include',
+            },
+        };
+
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
         context: ({req, res}):ApolloORMContext =>
             ({postgresORM:ormConnection.em, req, res}),
-        playground: isDevMode,
+        playground: devMode,
     };
 
     const apolloMiddlewareConfig = {
