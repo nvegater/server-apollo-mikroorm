@@ -10,7 +10,7 @@ import {UserResolver} from "./resolvers/User/user";
 import redis from 'redis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis from 'connect-redis';
-import {redisCookieConfig} from "./redis-config";
+import {redisCookieConfig, SessionCookieName} from "./redis-config";
 import {ApolloORMContext} from "./types";
 import cors from "cors"
 import {v4 as uuidv4} from "uuid";
@@ -45,7 +45,7 @@ const start_server = async () => {
     const RedisStore = connectRedis(session)
     const redisClient = redis.createClient()
     const sessionOptions: SessionOptions = {
-        name: '_qid',
+        name: SessionCookieName,
         genid: (_req) => {
             return uuidv4()
         },

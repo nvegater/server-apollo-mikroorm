@@ -5,6 +5,7 @@ import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
 import {FieldError} from "./errors";
 import {CredentialsInputs} from "./arguments";
+import {SessionCookieName} from "../../redis-config";
 
 const validateInputsRegister = (inputs: CredentialsInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
@@ -150,5 +151,23 @@ export class UserResolver {
             return {user: user}
         }
     }
+
+    @Mutation(() => Boolean)
+    async logout(
+        @Ctx() {req, res}: ApolloORMContext
+    ) {
+        return new Promise((resolvePromise) => {
+            req.session?.destroy((err) => {
+                if (err) {
+                    console.log(err);
+                    resolvePromise(false)
+                    return;
+                }
+                res.clearCookie(SessionCookieName)
+                resolvePromise(true)
+            })
+        })
+    }
+
 
 }

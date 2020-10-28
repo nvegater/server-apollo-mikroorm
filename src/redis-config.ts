@@ -10,3 +10,5 @@ export const redisCookieConfig:CookieOptions = {
     sameSite: 'lax', // csrf related.
     secure: _prod_ // cookie only works in https when we are in production
 };
+
+export const SessionCookieName = '_qid';
