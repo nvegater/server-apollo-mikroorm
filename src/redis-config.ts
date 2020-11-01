@@ -1,5 +1,8 @@
-import {CookieOptions} from "express";
+import {CookieOptions, Request} from "express";
 import {_prod_} from "./constants";
+import {v4 as uuidv4} from "uuid";
+import {RedisClient} from "redis";
+import {RedisStore} from "connect-redis";
 
 export const redisCookieConfig:CookieOptions = {
     maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
@@ -12,3 +15,14 @@ export const redisCookieConfig:CookieOptions = {
 };
 
 export const SessionCookieName = '_qid';
+
+export const generateUuidv4 = (_req:Request) => {
+    return uuidv4()
+};
+
+export const generateRedisStore = (redisStore:RedisStore,redisClient:RedisClient) => {
+    return new redisStore({
+        client: redisClient,
+        disableTouch: true,
+    })
+};

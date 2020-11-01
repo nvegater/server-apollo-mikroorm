@@ -7,13 +7,12 @@ import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
-import redis from 'redis';
+import redis, {RedisClient} from 'redis';
 import session, {SessionOptions} from 'express-session';
-import connectRedis from 'connect-redis';
-import {redisCookieConfig, SessionCookieName} from "./redis-config";
+import connectRedis, {RedisStore} from 'connect-redis';
+import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName} from "./redis-config";
 import {ApolloORMContext} from "./types";
 import cors from "cors"
-import {v4 as uuidv4} from "uuid";
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
 
 async function buildApolloSchemas() {
@@ -30,36 +29,31 @@ async function buildApolloSchemas() {
         validate: false
     });
 }
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
+// If credentials mode from following addresses is "include" browser will expose the response
+const whiteList = [
+    "http://localhost:3000",
+    "http://localhost:4000",
+    "http://localhost:4000/graphql"
+];
 
 const start_server = async () => {
 
-    // Middlewares: Redis, Apollo
     const app = express();
-    app.use(
-        cors({
-            origin: ["http://localhost:3000","http://localhost:4000", "http://localhost:4000/graphql"],
-            credentials: true
-        })
-    )
+    app.use(cors({origin: whiteList, credentials: true}))
 
-    const RedisStore = connectRedis(session)
-    const redisClient = redis.createClient()
+    const redisStore:RedisStore = connectRedis(session)
+    const redisClient:RedisClient = redis.createClient()
     const sessionOptions: SessionOptions = {
         name: SessionCookieName,
-        genid: (_req) => {
-            return uuidv4()
-        },
-        store: new RedisStore({
-            client: redisClient,
-            disableTouch: true,
-        }),
+        genid: generateUuidv4,
+        store: generateRedisStore(redisStore,redisClient),
         cookie: redisCookieConfig,
         secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
         resave: false,
     };
-    app.use(
-        session(sessionOptions)
-    )
+
+    app.use(session(sessionOptions));
 
     const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
     await ormConnection.getMigrator().up();
