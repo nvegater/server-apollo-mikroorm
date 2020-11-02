@@ -22,6 +22,10 @@ export class User {
     @Property({type: 'text', unique:true})
     username!: string;
 
+    @Field()
+    @Property({type: 'text', unique:true})
+    email!: string;
+
     // No field() annotation so no queriable by graphql
     @Property({type: 'text'})
     password!: string;

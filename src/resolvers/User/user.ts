@@ -169,5 +169,16 @@ export class UserResolver {
         })
     }
 
+    @Mutation(() => Boolean)
+    async forgotPassword(
+        @Arg('email') email: string,
+        @Ctx() {req, postgresORM}: ApolloORMContext
+
+    ) {
+        console.log(email, req, postgresORM)
+        //const user = await postgresORM.findOne(User, {email})
+        return true
+    }
+
 
 }
