@@ -14,7 +14,6 @@ import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName
 import {ApolloORMContext} from "./types";
 import cors from "cors"
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
-import {User} from "./entities/User";
 
 async function buildApolloSchemas() {
 
@@ -57,8 +56,6 @@ const start_server = async () => {
     app.use(session(sessionOptions));
 
     const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
-    // After adding a required email field, I need to delete the previous users that dont have email
-    await ormConnection.em.nativeDelete(User, {})
     await ormConnection.getMigrator().up();
 
     // Always same credentials for multiple-playground requests.
