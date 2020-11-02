@@ -14,6 +14,7 @@ import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName
 import {ApolloORMContext} from "./types";
 import cors from "cors"
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
+import {sendEmail} from "./utils/sendEmail";
 
 async function buildApolloSchemas() {
 
@@ -39,6 +40,7 @@ const whiteList = [
 
 const start_server = async () => {
 
+    sendEmail("foo@foo.com", "Hello There")
     const app = express();
     app.use(cors({origin: whiteList, credentials: true}))
 
