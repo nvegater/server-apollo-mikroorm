@@ -16,6 +16,7 @@ enum Fields {
     username = "username",
     email = "email",
     password = "password",
+    usernameOrEmail = "usernameOrEmail"
 }
 
 // User input dependant errors
@@ -26,6 +27,10 @@ const usernameMissingInputError: FieldError = {
 const usernameTooShortInputError: FieldError = {
     field: Fields.username,
     message: "username too short"
+}
+const usernameContainsAt: FieldError = {
+    field: Fields.username,
+    message: "username cant contain '@' Symbol"
 }
 const usernameOrEmailMissingInputError: FieldError = {
     field: Fields.username,
@@ -49,7 +54,7 @@ const passwordMissingInputError: FieldError = {
 }
 export const validateInputsLogin = (inputs: LoginInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
-    const USERNAME_OR_EMAIL_GIVEN = inputs.usernameOrPassword.length > 0;
+    const USERNAME_OR_EMAIL_GIVEN = inputs.usernameOrEmail.length > 0;
     if (!USERNAME_OR_EMAIL_GIVEN) {
         inputErrors.push(usernameOrEmailMissingInputError)
     }
@@ -70,6 +75,10 @@ export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => 
         const USERNAME_SHORT = inputs.username.length <= 2;
         if (USERNAME_SHORT) {
             inputErrors.push(usernameTooShortInputError)
+        }
+        const USERNAME_WITH_AT = inputs.username.includes('@');
+        if (USERNAME_WITH_AT) {
+            inputErrors.push(usernameContainsAt)
         }
     }
     const EMAIL_GIVEN = inputs.email.length > 0;
@@ -94,11 +103,7 @@ export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => 
 // Database dependant errors
 export const invalidCredentials: FieldError[] = [
     {
-        field: Fields.username,
-        message: "-"
-    },
-    {
-        field: Fields.email,
+        field: Fields.usernameOrEmail,
         message: "-"
     },
     {

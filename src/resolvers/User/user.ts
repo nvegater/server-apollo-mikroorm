@@ -66,7 +66,11 @@ export class UserResolver {
             return {errors: inputErrors}
         }
         // TODO combine with WHERE username = ""  or email = ""
-        const user: User | null = await postgresORM.findOne(User, {username: loginInputs.usernameOrPassword})
+        const user: User | null = await postgresORM.findOne(User,
+            loginInputs.usernameOrEmail.includes('@')
+                ? {email: loginInputs.usernameOrEmail}
+                : {username: loginInputs.usernameOrEmail})
+
         if (!user) {
             console.log("Failed because username not existing")
             return {errors: inputErrors.concat(invalidCredentials)}

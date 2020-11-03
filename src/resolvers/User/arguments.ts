@@ -16,7 +16,7 @@ export class RegisterInputs {
 @InputType()
 export class LoginInputs {
     @Field()
-    usernameOrPassword: string;
+    usernameOrEmail: string;
     @Field()
     password: string
 }
