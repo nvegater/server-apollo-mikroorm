@@ -4,7 +4,7 @@ import express from "express";
 import {ApolloServer} from "apollo-server-express";
 import {buildSchema} from "type-graphql";
 import {PostResolver} from "./resolvers/Post/post";
-import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
+import {ApolloServerExpressConfig, ExpressContext} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
 import Redis from 'ioredis';
@@ -14,6 +14,7 @@ import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName
 import {ApolloORMContext} from "./types";
 import cors from "cors"
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
+import {Context, ContextFunction} from "apollo-server-core";
 
 async function buildApolloSchemas() {
 
@@ -29,6 +30,7 @@ async function buildApolloSchemas() {
         validate: false
     });
 }
+
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
 // If credentials mode from following addresses is "include" browser will expose the response
 const whiteList = [
@@ -42,12 +44,12 @@ const start_server = async () => {
     const app = express();
     app.use(cors({origin: whiteList, credentials: true}))
 
-    const redisStore:RedisStore = connectRedis(session)
+    const redisStore: RedisStore = connectRedis(session)
     const redisClient = new Redis()
     const sessionOptions: SessionOptions = {
         name: SessionCookieName,
         genid: generateUuidv4,
-        store: generateRedisStore(redisStore,redisClient),
+        store: generateRedisStore(redisStore, redisClient),
         cookie: redisCookieConfig,
         secret: 'alsuehfnvieuhfuhkdjhfuie', // TODO sign cookie with env variable
         resave: false,
@@ -59,7 +61,7 @@ const start_server = async () => {
     await postgresORM.getMigrator().up();
 
     // Always same credentials for multiple-playground requests.
-    const devMode:PlaygroundConfig = process.env.NODE_ENV === 'production'
+    const devMode: PlaygroundConfig = process.env.NODE_ENV === 'production'
         ? false
         : {
             settings: {
@@ -68,10 +70,18 @@ const start_server = async () => {
             },
         };
 
+    const buildCustomContext: ContextFunction<ExpressContext, Context> | Context =
+        (expressContext): ApolloORMContext =>
+            ({
+                req: expressContext.req,
+                res: expressContext.res,
+                postgresORM: postgresORM.em,
+                redis: redisClient
+            });
+
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
-        context: ({req, res}):ApolloORMContext =>
-            ({postgresORM:postgresORM.em, req, res}),
+        context: buildCustomContext,
         playground: devMode,
     };
 
