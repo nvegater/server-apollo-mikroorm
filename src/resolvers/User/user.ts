@@ -11,7 +11,7 @@ import {
     validateInputsLogin,
     validateInputsRegister
 } from "./errors";
-import {CredentialsInputs} from "./arguments";
+import {LoginInputs, RegisterInputs} from "./arguments";
 import {SessionCookieName} from "../../redis-config";
 
 @Resolver()
@@ -29,25 +29,25 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async register(
-        @Arg("options") inputArgs: CredentialsInputs,
+        @Arg("options") registerInputs: RegisterInputs,
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
-        const inputErrors: FieldError[] = validateInputsRegister(inputArgs);
+        const inputErrors: FieldError[] = validateInputsRegister(registerInputs);
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
-        const userWithUsernameExists: User | null = await postgresORM.findOne(User, {username: inputArgs.username});
+        const userWithUsernameExists: User | null = await postgresORM.findOne(User, {username: registerInputs.username});
         if (userWithUsernameExists) {
             return {errors: inputErrors.concat(usernameInUseError)}
         } else {
-            const userWithEmailExists: User | null = await postgresORM.findOne(User, {email: inputArgs.email});
+            const userWithEmailExists: User | null = await postgresORM.findOne(User, {email: registerInputs.email});
             if (userWithEmailExists) {
                 return {errors: inputErrors.concat(emailInUseError)}
             } else {
                 const user = postgresORM.create(User, {
-                    username: inputArgs.username,
-                    email: inputArgs.email,
-                    password: await argon2.hash(inputArgs.password)
+                    username: registerInputs.username,
+                    email: registerInputs.email,
+                    password: await argon2.hash(registerInputs.password)
                 });
                 await postgresORM.persistAndFlush(user);
                 req.session!.userId = user.id;
@@ -58,18 +58,19 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async login(
-        @Arg("options") inputArgs: CredentialsInputs,
+        @Arg("options") loginInputs: LoginInputs,
         @Ctx() {req, postgresORM}: ApolloORMContext
     ): Promise<UserResponse> {
-        const inputErrors: FieldError[] = validateInputsLogin(inputArgs);
+        const inputErrors: FieldError[] = validateInputsLogin(loginInputs);
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
-        const user: User | null = await postgresORM.findOne(User, {username: inputArgs.username})
+        // TODO combine with WHERE username = ""  or email = ""
+        const user: User | null = await postgresORM.findOne(User, {username: loginInputs.usernameOrPassword})
         if (!user) {
             return {errors: inputErrors.concat(loginErrors)}
         } else {
-            const userPassMatch = await argon2.verify(user.password, inputArgs.password);
+            const userPassMatch = await argon2.verify(user.password, loginInputs.password);
             if (!userPassMatch) {
                 return {errors: inputErrors.concat(loginErrors)}
             } else {
