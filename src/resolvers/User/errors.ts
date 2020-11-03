@@ -92,7 +92,7 @@ export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => 
     return inputErrors;
 }
 // Database dependant errors
-export const loginErrors: FieldError[] = [
+export const invalidCredentials: FieldError[] = [
     {
         field: Fields.username,
         message: "-"
@@ -103,7 +103,7 @@ export const loginErrors: FieldError[] = [
     },
     {
         field: Fields.password,
-        message: "the username or password is invalid"
+        message: "Invalid username, email or password"
     }];
 
 export const usernameInUseError: FieldError = {

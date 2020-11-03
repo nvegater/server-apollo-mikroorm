@@ -7,7 +7,7 @@ import {
     FieldError,
     emailInUseError,
     usernameInUseError,
-    loginErrors,
+    invalidCredentials,
     validateInputsLogin,
     validateInputsRegister
 } from "./errors";
@@ -68,11 +68,13 @@ export class UserResolver {
         // TODO combine with WHERE username = ""  or email = ""
         const user: User | null = await postgresORM.findOne(User, {username: loginInputs.usernameOrPassword})
         if (!user) {
-            return {errors: inputErrors.concat(loginErrors)}
+            console.log("Failed because username not existing")
+            return {errors: inputErrors.concat(invalidCredentials)}
         } else {
+            console.log("Failed because user there but wrong password")
             const userPassMatch = await argon2.verify(user.password, loginInputs.password);
             if (!userPassMatch) {
-                return {errors: inputErrors.concat(loginErrors)}
+                return {errors: inputErrors.concat(invalidCredentials)}
             } else {
                 req.session!.userId = user.id;
                 return {user: user}
