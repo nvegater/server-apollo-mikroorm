@@ -2,34 +2,16 @@ import {MikroORM} from "@mikro-orm/core"
 import mikroPostgresConfiguration from "./mikro-orm.config"
 import express from "express";
 import {ApolloServer} from "apollo-server-express";
-import {buildSchema} from "type-graphql";
-import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig, ExpressContext} from "apollo-server-express/src/ApolloServer";
-import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
-import {UserResolver} from "./resolvers/User/user";
 import Redis from 'ioredis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis, {RedisStore} from 'connect-redis';
 import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName} from "./redis-config";
 import {ApolloORMContext} from "./types";
 import cors from "cors"
-import {PlaygroundConfig} from "apollo-server-core/src/playground";
 import {Context, ContextFunction} from "apollo-server-core";
+import {buildApolloSchemas, devMode} from "./apollo-config";
 
-async function buildApolloSchemas() {
-
-    const entityResolvers:
-        NonEmptyArray<Function> =
-        [
-            PostResolver,
-            UserResolver
-        ];
-
-    return await buildSchema({
-        resolvers: entityResolvers,
-        validate: false
-    });
-}
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
 // If credentials mode from following addresses is "include" browser will expose the response
@@ -41,11 +23,14 @@ const whiteList = [
 
 const start_server = async () => {
 
+    // TODO only initializations, configurations go somewhere else.
+
     const app = express();
     app.use(cors({origin: whiteList, credentials: true}))
 
     const redisStore: RedisStore = connectRedis(session)
     const redisClient = new Redis()
+    // TODO Move this to Redis config.
     const sessionOptions: SessionOptions = {
         name: SessionCookieName,
         genid: generateUuidv4,
@@ -60,16 +45,7 @@ const start_server = async () => {
     const postgresORM = await MikroORM.init(mikroPostgresConfiguration);
     await postgresORM.getMigrator().up();
 
-    // Always same credentials for multiple-playground requests.
-    const devMode: PlaygroundConfig = process.env.NODE_ENV === 'production'
-        ? false
-        : {
-            settings: {
-                //default is 'omit'
-                'request.credentials': 'include',
-            },
-        };
-
+    // TODO make this function pure and move to a separate file apollo-config.ts
     const buildCustomContext: ContextFunction<ExpressContext, Context> | Context =
         (expressContext): ApolloORMContext =>
             ({
@@ -79,17 +55,19 @@ const start_server = async () => {
                 redis: redisClient
             });
 
+    // TODO move this to apollo-config.ts when context build is pure
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
         context: buildCustomContext,
         playground: devMode,
     };
-
+    // TODO move this to apollo-config.ts
     const apolloMiddlewareConfig = {
         app, // Http -express server
         path: '/graphql', // Server listen on this endpoint
         cors: false // remove Apollo Cors-config, since there is one already
     };
+
     new ApolloServer(apolloConfig)
         .applyMiddleware(apolloMiddlewareConfig)
 
