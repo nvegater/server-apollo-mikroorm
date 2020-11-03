@@ -41,11 +41,12 @@
     "express": "^4.17.1",
     "express-session": "^1.17.1",
     "graphql": "^15.3.0",
+    "ioredis": "^4.19.2",
     "nodemailer": "^6.4.14",
     "pg": "^8.3.3",
     "redis": "^3.0.2",
     "type-graphql": "^1.0.0",
-    "uuid": "^8.3.0"
+    "uuid": "^8.3.1"
   },
   "mikro-orm": {
     "useTsNode": true,

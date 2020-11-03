@@ -7,7 +7,7 @@ import {PostResolver} from "./resolvers/Post/post";
 import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {UserResolver} from "./resolvers/User/user";
-import redis, {RedisClient} from 'redis';
+import Redis from 'ioredis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis, {RedisStore} from 'connect-redis';
 import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName} from "./redis-config";
@@ -43,7 +43,7 @@ const start_server = async () => {
     app.use(cors({origin: whiteList, credentials: true}))
 
     const redisStore:RedisStore = connectRedis(session)
-    const redisClient:RedisClient = redis.createClient()
+    const redisClient = new Redis()
     const sessionOptions: SessionOptions = {
         name: SessionCookieName,
         genid: generateUuidv4,
@@ -55,8 +55,8 @@ const start_server = async () => {
 
     app.use(session(sessionOptions));
 
-    const ormConnection = await MikroORM.init(mikroPostgresConfiguration);
-    await ormConnection.getMigrator().up();
+    const postgresORM = await MikroORM.init(mikroPostgresConfiguration);
+    await postgresORM.getMigrator().up();
 
     // Always same credentials for multiple-playground requests.
     const devMode:PlaygroundConfig = process.env.NODE_ENV === 'production'
@@ -71,7 +71,7 @@ const start_server = async () => {
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
         context: ({req, res}):ApolloORMContext =>
-            ({postgresORM:ormConnection.em, req, res}),
+            ({postgresORM:postgresORM.em, req, res}),
         playground: devMode,
     };
 

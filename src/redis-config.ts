@@ -1,8 +1,8 @@
 import {CookieOptions, Request} from "express";
 import {_prod_} from "./constants";
 import {v4 as uuidv4} from "uuid";
-import {RedisClient} from "redis";
 import {RedisStore} from "connect-redis";
+import {Redis} from "ioredis";
 
 export const redisCookieConfig:CookieOptions = {
     maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
@@ -20,7 +20,7 @@ export const generateUuidv4 = (_req:Request) => {
     return uuidv4()
 };
 
-export const generateRedisStore = (redisStore:RedisStore,redisClient:RedisClient) => {
+export const generateRedisStore = (redisStore:RedisStore,redisClient:Redis) => {
     return new redisStore({
         client: redisClient,
         disableTouch: true,
