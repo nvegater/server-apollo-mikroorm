@@ -1,17 +1,4 @@
-import {Field, ObjectType} from "type-graphql";
-import {RegisterInputs, LoginInputs, ChangePasswordInputs} from "./arguments";
-
-/**
- * This file is for error types of resolvers related to an user
- * **/
-@ObjectType()
-export class FieldError {
-    @Field()
-    field: string;
-    @Field()
-    message: string;
-}
-
+import {FieldError} from "./outputs";
 enum Fields {
     username = "username",
     email = "email",
@@ -64,70 +51,9 @@ const newPasswordTooShortInputError: FieldError = {
     field: Fields.newPassword,
     message: "try a better new password" // Dont give the reason of bad password
 }
-export const validateInputsLogin = (inputs: LoginInputs): FieldError[] => {
-    let inputErrors: FieldError[] = [];
-    const USERNAME_OR_EMAIL_GIVEN = inputs.usernameOrEmail.length > 0;
-    if (!USERNAME_OR_EMAIL_GIVEN) {
-        inputErrors.push(usernameOrEmailMissingInputError)
-    }
-    const PASSWORD_GIVEN = inputs.password.length > 0;
-    if (!PASSWORD_GIVEN) {
-        inputErrors.push(passwordMissingInputError)
-    }
-    return inputErrors;
-}
 
-export const validateInputsChangePassword = (inputs: ChangePasswordInputs): FieldError[] => {
-    let inputErrors: FieldError[] = [];
-    const newPassword = inputs.newPassword;
-    const PASSWORD_GIVEN = newPassword.length > 0;
-    if (!PASSWORD_GIVEN) {
-        inputErrors.push(newPasswordMissingInputError)
-    } else {
-        if (newPassword.length <= 2) {
-            inputErrors.push(newPasswordTooShortInputError)
-        }
-    }
-    return inputErrors;
-}
-
-export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => {
-    let inputErrors: FieldError[] = [];
-
-    const USERNAME_GIVEN = inputs.username.length > 0;
-    if (!USERNAME_GIVEN) {
-        inputErrors.push(usernameMissingInputError)
-    } else {
-        const USERNAME_SHORT = inputs.username.length <= 2;
-        if (USERNAME_SHORT) {
-            inputErrors.push(usernameTooShortInputError)
-        }
-        const USERNAME_WITH_AT = inputs.username.includes('@');
-        if (USERNAME_WITH_AT) {
-            inputErrors.push(usernameContainsAt)
-        }
-    }
-    const EMAIL_GIVEN = inputs.email.length > 0;
-    if (!EMAIL_GIVEN) {
-        inputErrors.push(emailIsMissingInputError)
-    } else {
-        const EMAIL_VALID = inputs.email.includes('@') && inputs.email.includes('.');
-        if (!EMAIL_VALID) {
-            inputErrors.push(emailIsInvalidInputError)
-        }
-    }
-    const PASSWORD_GIVEN = inputs.password.length > 0;
-    if (!PASSWORD_GIVEN) {
-        inputErrors.push(passwordMissingInputError)
-    } else {
-        if (inputs.password.length <= 2) {
-            inputErrors.push(passwordTooShortInputError)
-        }
-    }
-    return inputErrors;
-}
 // Database dependant errors
-export const invalidCredentials: FieldError[] = [
+const invalidCredentials: FieldError[] = [
     {
         field: Fields.usernameOrEmail,
         message: "-"
@@ -137,22 +63,42 @@ export const invalidCredentials: FieldError[] = [
         message: "Invalid username, email or password"
     }];
 
-export const usernameInUseError: FieldError = {
+const usernameInUseError: FieldError = {
     field: Fields.username,
     message: "User already exists"
 }
-export const emailInUseError: FieldError = {
+const emailInUseError: FieldError = {
     field: Fields.email,
     message: "That email is already in use"
 }
 
-export const tokenExpired: FieldError = {
+const tokenExpired: FieldError = {
     field: Fields.token,
     message: 'token expired'
 }
 
-export const tokenUserError: FieldError = {
+const tokenUserError: FieldError = {
     field: Fields.token,
     message: 'user not longer exists'
 }
+
+const errors = {
+    usernameMissingInputError,
+    usernameTooShortInputError,
+    usernameContainsAt,
+    usernameOrEmailMissingInputError,
+    emailIsInvalidInputError,
+    emailIsMissingInputError,
+    passwordTooShortInputError,
+    passwordMissingInputError,
+    newPasswordMissingInputError,
+    newPasswordTooShortInputError,
+    invalidCredentials,
+    usernameInUseError,
+    emailInUseError,
+    tokenExpired,
+    tokenUserError
+}
+
+export default errors
 
