@@ -5,14 +5,14 @@ import {UserResolver} from "./resolvers/User/user";
 import {buildSchema} from "type-graphql";
 import {ExpressContext} from "apollo-server-express/dist/ApolloServer";
 import {EntityManager, MikroORM} from "@mikro-orm/core";
-import {Redis} from "ioredis";
+import {Redis as RedisType, Redis} from "ioredis";
 import {ContextFunction} from "apollo-server-core";
 import {Express, Request, Response} from "express";
-import {ServerRegistration} from "apollo-server-express/src/ApolloServer";
+import {ApolloServerExpressConfig, ServerRegistration} from "apollo-server-express/src/ApolloServer";
 
 interface CustomContext extends ExpressContext {
-    orm:MikroORM;
-    redisContext:Redis;
+    orm: MikroORM;
+    redisContext: Redis;
 }
 
 export type ApolloORMContext = {
@@ -32,24 +32,13 @@ export const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
             redis: customContext.redisContext
         });
 
-const registerServer = (app:Express) => ({
+const registerServer = (app: Express) => ({
     app, // Http -express server
     path: '/graphql', // Server listen on this endpoint
     cors: false // remove Apollo Cors-config, since there is one already
 })
 
-export const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
-    ? false
-    : {
-        settings: {
-            //default is 'omit'
-            // Always same credentials for multiple-playground requests in Dev mode.
-            'request.credentials': 'include',
-        },
-    };
-
-
-export async function buildSchemas() {
+async function buildSchemas() {
 
     const entityResolvers:
         NonEmptyArray<Function> =
@@ -64,4 +53,25 @@ export async function buildSchemas() {
     });
 }
 
-export const registerExpressServer:(app:Express)=>ServerRegistration = (expressApp) => registerServer(expressApp);
+export const registerExpressServer: (app: Express) => ServerRegistration = (expressApp) => registerServer(expressApp);
+
+
+export async function buildApolloPostgresRedisConfig(orm: MikroORM, redisClient: RedisType) {
+    const graphqlSchemas = await buildSchemas();
+    const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
+        ? false
+        : {
+            settings: {
+                //default is 'omit'
+                // Always same credentials for multiple-playground requests in Dev mode.
+                'request.credentials': 'include',
+            },
+        };
+    const apolloConfig: ApolloServerExpressConfig = {
+        schema: graphqlSchemas,
+        context: ({req, res}) =>
+            buildContext({req, res, orm: orm, redisContext: redisClient}),
+        playground: playGroundConfig,
+    };
+    return apolloConfig
+}

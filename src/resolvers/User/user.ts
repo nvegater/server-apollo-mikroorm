@@ -75,9 +75,9 @@ export class UserResolver {
             console.log("Failed because username not existing")
             return {errors: inputErrors.concat(invalidCredentials)}
         } else {
-            console.log("Failed because user there but wrong password")
             const userPassMatch = await argon2.verify(user.password, loginInputs.password);
             if (!userPassMatch) {
+                console.log("Failed because user there but wrong password")
                 return {errors: inputErrors.concat(invalidCredentials)}
             } else {
                 req.session!.userId = user.id;
