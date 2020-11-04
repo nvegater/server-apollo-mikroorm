@@ -13,6 +13,10 @@ import {
 import {LoginInputs, RegisterInputs} from "./arguments";
 import {SessionCookieName} from "../../redis-config";
 import {ApolloORMContext} from "../../apollo-config";
+import {v4 as uuidv4} from "uuid";
+import {sendEmail} from "../../utils/sendEmail";
+import {FORGET_PASSWORD_PREFIX} from "../../constants";
+
 
 @Resolver()
 export class UserResolver {
@@ -105,10 +109,20 @@ export class UserResolver {
     @Mutation(() => Boolean)
     async forgotPassword(
         @Arg('email') email: string,
-        @Ctx() {req, postgresORM}: ApolloORMContext
+        @Ctx() {redis, postgresORM}: ApolloORMContext
     ) {
-        console.log(email, req, postgresORM)
-        //const user = await postgresORM.findOne(User, {email})
+        const user = await postgresORM.findOne(User, {email})
+        if (!user) {
+            // email not in DB but just do nothing
+            return true
+        }
+        const token = uuidv4();
+        const THREE_DAYS_MS = 1000 * 60 * 60 * 24 * 3;
+        await redis.set(FORGET_PASSWORD_PREFIX + token, // with this key
+            user.id, // access this value
+            "ex", // that expires
+            THREE_DAYS_MS); // after 3 days
+        await sendEmail(email, `<a href="http://localhost:3000/change-password/${token}"> reset password </a>`)
         return true
     }
 
