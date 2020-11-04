@@ -1,4 +1,3 @@
-// Always same credentials for multiple-playground requests.
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {PostResolver} from "./resolvers/Post/post";
@@ -9,8 +8,9 @@ import {EntityManager, MikroORM} from "@mikro-orm/core";
 import {Redis} from "ioredis";
 import {ContextFunction} from "apollo-server-core";
 import {Express, Request, Response} from "express";
+import {ServerRegistration} from "apollo-server-express/src/ApolloServer";
 
-export interface CustomContext extends ExpressContext {
+interface CustomContext extends ExpressContext {
     orm:MikroORM;
     redisContext:Redis;
 }
@@ -23,7 +23,7 @@ export type ApolloORMContext = {
 }
 
 // ContextFunction<Params, ReturnType>
-export const buildCustomContext: ContextFunction<CustomContext, ApolloORMContext> =
+export const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
     (customContext) =>
         ({
             req: customContext.req,
@@ -32,23 +32,24 @@ export const buildCustomContext: ContextFunction<CustomContext, ApolloORMContext
             redis: customContext.redisContext
         });
 
-export const apolloMiddlewareConfig = (app:Express) => ({
+const registerServer = (app:Express) => ({
     app, // Http -express server
     path: '/graphql', // Server listen on this endpoint
     cors: false // remove Apollo Cors-config, since there is one already
 })
 
-export const devMode: PlaygroundConfig = process.env.NODE_ENV === 'production'
+export const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
     ? false
     : {
         settings: {
             //default is 'omit'
+            // Always same credentials for multiple-playground requests in Dev mode.
             'request.credentials': 'include',
         },
     };
 
 
-export async function buildApolloSchemas() {
+export async function buildSchemas() {
 
     const entityResolvers:
         NonEmptyArray<Function> =
@@ -62,3 +63,5 @@ export async function buildApolloSchemas() {
         validate: false
     });
 }
+
+export const registerExpressServer:(app:Express)=>ServerRegistration = (expressApp) => registerServer(expressApp);

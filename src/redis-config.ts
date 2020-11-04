@@ -19,7 +19,7 @@ const generateUuidv4 = (_req: Request) => {
 };
 
 export const SessionCookieName = '_qid';
-export const generateRedisSession: (store:RedisStore, redis:Redis) => SessionOptions = (store,redis)=> ({
+export const buildRedisSession: (store:RedisStore, redis:Redis) => SessionOptions = (store, redis)=> ({
     name: SessionCookieName,
     genid: generateUuidv4,
     store: new store({
