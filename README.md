@@ -1,46 +1,34 @@
-# Boilerplate
+# Server: Apollo, MikroOrm, Redis, Express, Postgresql
 
-Minimal node server with Typescript and nodemon.
+## Libraries
 
-Recommended for development is to open 2 terminals to achieve a chain reaction:
+* Redis to create cookies and sessions. Sort of secure DB in the client.
+* Apollo is arguably the most curated graphql library.
+* MikroOrm is a new ORM created with Graphql-Typescript in mind. Maybe replaceable with TypeORM.
+* Express and Postgres are just safe.
 
- - Auto-compile ts --> js everytime `src/index.ts` file changes.
- ```bash
- yarn dev-ts
- ```
+### Other "secondary" but essential libraries:
+* argon2 for password CRUD
+* ioredis, connect-redis and express-session for Cookies and Authentication.
+* uuid for token and ids generation.
+* nodemailer as a "forgot password" solution.
 
- - Re-execute the production-ready js code (`dist/index.js`) after ts --> js compilation. 
-```bash
-yarn dev-javascript
-```
+Everything is 100% Typed.
 
-### Scripts descriptions
+## How it plays together
 
+The magic happens in `index.ts`, TLDR:
 
-To watch for file changes:
-```bash
-yarn watch
-```
+1. Initialize Express.
+2. Configure CORS's whitelist for easy Development.
+3. Initialize Redis to access req/resp headers from the Express app.
+4. Initialize MikroOrm with and configure the Postgresql driver.
+5. Customize Apollo configuration to connect it with Redis and MikroOrm.
+6. Initialize server
 
-To run production code `dist/index.js`:
-```bash
-yarn node-javascript
-```
+I will explain some convoluted parts here, so I don't forget them.
 
-Auto-refresh production code when `dist/index.js` changes:
-```bash
-yarn dev-javascript
-```
-
-Compile the `src/index.ts` in the `dist/index.js`:
-```bash
-yarn node-ts
-```
-
-Auto-refresh compilation (ts --> js) on changes in `src/index.ts` file:
-```bash
-yarn dev-ts
-```
+## Custom Apollo Context
 
 ## Redis Cookies Login explained
 
