@@ -8,9 +8,9 @@ import {
     usernameInUseError,
     invalidCredentials,
     validateInputsLogin,
-    validateInputsRegister
+    validateInputsRegister, validateInputsChangePassword, tokenExpired, tokenUserError
 } from "./errors";
-import {LoginInputs, RegisterInputs} from "./arguments";
+import {ChangePasswordInputs, LoginInputs, RegisterInputs} from "./arguments";
 import {SessionCookieName} from "../../redis-config";
 import {ApolloORMContext} from "../../apollo-config";
 import {v4 as uuidv4} from "uuid";
@@ -83,6 +83,35 @@ export class UserResolver {
                 console.log("Failed because user there but wrong password")
                 return {errors: inputErrors.concat(invalidCredentials)}
             } else {
+                req.session!.userId = user.id;
+                return {user: user}
+            }
+        }
+    }
+
+    @Mutation(() => UserResponse)
+    async changePassword(
+        @Arg("options") changePasswordInputs: ChangePasswordInputs,
+        @Ctx() {redis, postgresORM, req}: ApolloORMContext
+    ): Promise<UserResponse> {
+        const inputErrors: FieldError[] = validateInputsChangePassword(changePasswordInputs);
+        if (inputErrors.length > 0) {
+            return {errors: inputErrors}
+        }
+        const key = FORGET_PASSWORD_PREFIX + changePasswordInputs.token;
+        const userId = await redis.get(key);
+        if (!userId) {
+            return {errors: inputErrors.concat(tokenExpired)}
+        } else {
+            const user: User | null = await postgresORM.findOne(User, {id: parseInt(userId)});
+            if (!user) {
+                return {errors: inputErrors.concat(tokenUserError)}
+            } else {
+                user.password = await argon2.hash(changePasswordInputs.newPassword)
+                //I could update updatedAt but the entity User.ts has a onUpdate hook on this field
+                await postgresORM.persistAndFlush(user);
+                await redis.del(key);
+                // Login automatically
                 req.session!.userId = user.id;
                 return {user: user}
             }

@@ -1,5 +1,5 @@
 import {Field, ObjectType} from "type-graphql";
-import {RegisterInputs, LoginInputs} from "./arguments";
+import {RegisterInputs, LoginInputs, ChangePasswordInputs} from "./arguments";
 
 /**
  * This file is for error types of resolvers related to an user
@@ -16,7 +16,9 @@ enum Fields {
     username = "username",
     email = "email",
     password = "password",
-    usernameOrEmail = "usernameOrEmail"
+    usernameOrEmail = "usernameOrEmail",
+    token = "token",
+    newPassword = "newPassword"
 }
 
 // User input dependant errors
@@ -52,6 +54,16 @@ const passwordMissingInputError: FieldError = {
     field: Fields.password,
     message: "password missing" // Dont give the reason of bad password
 }
+
+const newPasswordMissingInputError: FieldError = {
+    field: Fields.newPassword,
+    message: "new password missing" // Dont give the reason of bad password
+}
+
+const newPasswordTooShortInputError: FieldError = {
+    field: Fields.newPassword,
+    message: "try a better new password" // Dont give the reason of bad password
+}
 export const validateInputsLogin = (inputs: LoginInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
     const USERNAME_OR_EMAIL_GIVEN = inputs.usernameOrEmail.length > 0;
@@ -61,6 +73,20 @@ export const validateInputsLogin = (inputs: LoginInputs): FieldError[] => {
     const PASSWORD_GIVEN = inputs.password.length > 0;
     if (!PASSWORD_GIVEN) {
         inputErrors.push(passwordMissingInputError)
+    }
+    return inputErrors;
+}
+
+export const validateInputsChangePassword = (inputs: ChangePasswordInputs): FieldError[] => {
+    let inputErrors: FieldError[] = [];
+    const newPassword = inputs.newPassword;
+    const PASSWORD_GIVEN = newPassword.length > 0;
+    if (!PASSWORD_GIVEN) {
+        inputErrors.push(newPasswordMissingInputError)
+    } else {
+        if (newPassword.length <= 2) {
+            inputErrors.push(newPasswordTooShortInputError)
+        }
     }
     return inputErrors;
 }
@@ -118,5 +144,15 @@ export const usernameInUseError: FieldError = {
 export const emailInUseError: FieldError = {
     field: Fields.email,
     message: "That email is already in use"
+}
+
+export const tokenExpired: FieldError = {
+    field: Fields.token,
+    message: 'token expired'
+}
+
+export const tokenUserError: FieldError = {
+    field: Fields.token,
+    message: 'user not longer exists'
 }
 

@@ -20,3 +20,11 @@ export class LoginInputs {
     @Field()
     password: string
 }
+
+@InputType()
+export class ChangePasswordInputs {
+    @Field()
+    newPassword: string;
+    @Field()
+    token: string
+}
