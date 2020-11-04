@@ -1,32 +1,21 @@
 import {MikroORM} from "@mikro-orm/core"
 import mikroPostgresConfiguration from "./mikro-orm.config"
-import express from "express";
+import express, {Express} from "express";
 import {ApolloServer} from "apollo-server-express";
-import {ApolloServerExpressConfig, ExpressContext} from "apollo-server-express/src/ApolloServer";
+import {ApolloServerExpressConfig} from "apollo-server-express/src/ApolloServer";
 import Redis from 'ioredis';
 import session, {SessionOptions} from 'express-session';
 import connectRedis, {RedisStore} from 'connect-redis';
 import {generateRedisStore, generateUuidv4, redisCookieConfig, SessionCookieName} from "./redis-config";
-import {ApolloORMContext} from "./types";
 import cors from "cors"
-import {Context, ContextFunction} from "apollo-server-core";
-import {buildApolloSchemas, devMode} from "./apollo-config";
+import {apolloMiddlewareConfig, buildApolloSchemas, buildCustomContext, devMode} from "./apollo-config";
+import {corsConfig} from "./express-config";
 
-
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
-// If credentials mode from following addresses is "include" browser will expose the response
-const whiteList = [
-    "http://localhost:3000",
-    "http://localhost:4000",
-    "http://localhost:4000/graphql"
-];
 
 const start_server = async () => {
 
-    // TODO only initializations, configurations go somewhere else.
-
-    const app = express();
-    app.use(cors({origin: whiteList, credentials: true}))
+    const app:Express = express();
+    app.use(cors(corsConfig))
 
     const redisStore: RedisStore = connectRedis(session)
     const redisClient = new Redis()
@@ -42,34 +31,18 @@ const start_server = async () => {
 
     app.use(session(sessionOptions));
 
-    const postgresORM = await MikroORM.init(mikroPostgresConfiguration);
+    const postgresORM: MikroORM = await MikroORM.init(mikroPostgresConfiguration);
     await postgresORM.getMigrator().up();
 
-    // TODO make this function pure and move to a separate file apollo-config.ts
-    const buildCustomContext: ContextFunction<ExpressContext, Context> | Context =
-        (expressContext): ApolloORMContext =>
-            ({
-                req: expressContext.req,
-                res: expressContext.res,
-                postgresORM: postgresORM.em,
-                redis: redisClient
-            });
-
-    // TODO move this to apollo-config.ts when context build is pure
     const apolloConfig: ApolloServerExpressConfig = {
         schema: await buildApolloSchemas(),
-        context: buildCustomContext,
+        context: ({req, res})=>
+            buildCustomContext({req, res, orm:postgresORM, redisContext:redisClient}),
         playground: devMode,
-    };
-    // TODO move this to apollo-config.ts
-    const apolloMiddlewareConfig = {
-        app, // Http -express server
-        path: '/graphql', // Server listen on this endpoint
-        cors: false // remove Apollo Cors-config, since there is one already
     };
 
     new ApolloServer(apolloConfig)
-        .applyMiddleware(apolloMiddlewareConfig)
+        .applyMiddleware(apolloMiddlewareConfig(app))
 
 
     app.listen(4000, () => {

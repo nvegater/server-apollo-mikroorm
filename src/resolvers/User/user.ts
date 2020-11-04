@@ -1,5 +1,4 @@
 import {Arg, Ctx, Mutation, Query, Resolver} from "type-graphql"
-import {ApolloORMContext} from "../../types";
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {UserResponse} from "./userResponse";
@@ -13,6 +12,7 @@ import {
 } from "./errors";
 import {LoginInputs, RegisterInputs} from "./arguments";
 import {SessionCookieName} from "../../redis-config";
+import {ApolloORMContext} from "../../apollo-config";
 
 @Resolver()
 export class UserResolver {
