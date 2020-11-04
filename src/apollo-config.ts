@@ -8,29 +8,8 @@ import {EntityManager, MikroORM} from "@mikro-orm/core";
 import {Redis as RedisType, Redis} from "ioredis";
 import {ContextFunction} from "apollo-server-core";
 import {Express, Request, Response} from "express";
-import {ApolloServerExpressConfig, ServerRegistration} from "apollo-server-express/src/ApolloServer";
-
-interface CustomContext extends ExpressContext {
-    orm: MikroORM;
-    redisContext: Redis;
-}
-
-export type ApolloORMContext = {
-    postgresORM: EntityManager;
-    req: Request;
-    res: Response;
-    redis: Redis;
-}
-
-// ContextFunction<Params, ReturnType>
-export const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
-    (customContext) =>
-        ({
-            req: customContext.req,
-            res: customContext.res,
-            postgresORM: customContext.orm.em,
-            redis: customContext.redisContext
-        });
+import {ServerRegistration} from "apollo-server-express/src/ApolloServer";
+import { Config } from "apollo-server-express";
 
 const registerServer = (app: Express) => ({
     app, // Http -express server
@@ -55,8 +34,36 @@ async function buildSchemas() {
 
 export const registerExpressServer: (app: Express) => ServerRegistration = (expressApp) => registerServer(expressApp);
 
+interface CustomContext extends ExpressContext {
+    orm: MikroORM;
+    redisContext: Redis;
+}
 
-export async function buildApolloPostgresRedisConfig(orm: MikroORM, redisClient: RedisType) {
+export type ApolloORMContext = {
+    postgresORM: EntityManager;
+    req: Request;
+    res: Response;
+    redis: Redis;
+}
+
+export interface ExpressORMRedisApolloConfig extends Config {
+    // This mimics ApolloServerExpressConfig from apollo-server-express/src/ApolloServer
+    // BUT with more context
+    context: ContextFunction<CustomContext, ApolloORMContext> | ApolloORMContext;
+}
+
+// ContextFunction<Params, ReturnType>
+const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
+    (customContext) =>
+        ({
+            req: customContext.req,
+            res: customContext.res,
+            postgresORM: customContext.orm.em,
+            redis: customContext.redisContext
+        });
+
+
+export async function buildApolloConfig(orm: MikroORM, redisClient: RedisType) {
     const graphqlSchemas = await buildSchemas();
     const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
         ? false
@@ -67,7 +74,7 @@ export async function buildApolloPostgresRedisConfig(orm: MikroORM, redisClient:
                 'request.credentials': 'include',
             },
         };
-    const apolloConfig: ApolloServerExpressConfig = {
+    const apolloConfig: ExpressORMRedisApolloConfig = {
         schema: graphqlSchemas,
         context: ({req, res}) =>
             buildContext({req, res, orm: orm, redisContext: redisClient}),

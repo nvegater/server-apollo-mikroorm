@@ -21,7 +21,6 @@ export class UserResolver {
     async me(
         @Ctx() {req, postgresORM}: ApolloORMContext
     ) {
-        console.log(req.session!.userId)
         return req.session!.userId ?
             await postgresORM.findOne(User, {id: req.session!.userId}) :
             null;
