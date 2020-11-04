@@ -9,7 +9,7 @@ import {Redis as RedisType, Redis} from "ioredis";
 import {ContextFunction} from "apollo-server-core";
 import {Express, Request, Response} from "express";
 import {ServerRegistration} from "apollo-server-express/src/ApolloServer";
-import { Config } from "apollo-server-express";
+import {Config} from "apollo-server-express";
 
 const registerServer = (app: Express) => ({
     app, // Http -express server
@@ -17,7 +17,9 @@ const registerServer = (app: Express) => ({
     cors: false // remove Apollo Cors-config, since there is one already
 })
 
-async function buildSchemas() {
+export const registerExpressServer: (app: Express) => ServerRegistration = (expressApp) => registerServer(expressApp);
+
+const buildSchemas = async () => {
 
     const entityResolvers:
         NonEmptyArray<Function> =
@@ -31,8 +33,6 @@ async function buildSchemas() {
         validate: false
     });
 }
-
-export const registerExpressServer: (app: Express) => ServerRegistration = (expressApp) => registerServer(expressApp);
 
 interface CustomContext extends ExpressContext {
     orm: MikroORM;
@@ -63,7 +63,8 @@ const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
         });
 
 
-export async function buildApolloConfig(orm: MikroORM, redisClient: RedisType) {
+export const buildApolloConfig =
+    async (orm: MikroORM, redisClient: RedisType): Promise<ExpressORMRedisApolloConfig> => {
     const graphqlSchemas = await buildSchemas();
     const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
         ? false
@@ -74,11 +75,10 @@ export async function buildApolloConfig(orm: MikroORM, redisClient: RedisType) {
                 'request.credentials': 'include',
             },
         };
-    const apolloConfig: ExpressORMRedisApolloConfig = {
+    return {
         schema: graphqlSchemas,
         context: ({req, res}) =>
             buildContext({req, res, orm: orm, redisContext: redisClient}),
         playground: playGroundConfig,
-    };
-    return apolloConfig
+    }
 }
