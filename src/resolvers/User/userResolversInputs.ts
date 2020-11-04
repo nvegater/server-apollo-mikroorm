@@ -1,6 +1,6 @@
 import {Field, InputType} from "type-graphql";
-import {FieldError} from "./outputs";
-import errors from "./errors";
+import {FieldError} from "./userResolversOutputs";
+import userResolversErrors from "./userResolversErrors";
 
 @InputType()
 export class RegisterInputs {
@@ -31,11 +31,11 @@ export const validateInputsLogin = (inputs: LoginInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];
     const USERNAME_OR_EMAIL_GIVEN = inputs.usernameOrEmail.length > 0;
     if (!USERNAME_OR_EMAIL_GIVEN) {
-        inputErrors.push(errors.usernameOrEmailMissingInputError)
+        inputErrors.push(userResolversErrors.usernameOrEmailMissingInputError)
     }
     const PASSWORD_GIVEN = inputs.password.length > 0;
     if (!PASSWORD_GIVEN) {
-        inputErrors.push(errors.passwordMissingInputError)
+        inputErrors.push(userResolversErrors.passwordMissingInputError)
     }
     return inputErrors;
 }
@@ -45,10 +45,10 @@ export const validateInputsChangePassword = (inputs: ChangePasswordInputs): Fiel
     const newPassword = inputs.newPassword;
     const PASSWORD_GIVEN = newPassword.length > 0;
     if (!PASSWORD_GIVEN) {
-        inputErrors.push(errors.newPasswordMissingInputError)
+        inputErrors.push(userResolversErrors.newPasswordMissingInputError)
     } else {
         if (newPassword.length <= 2) {
-            inputErrors.push(errors.newPasswordTooShortInputError)
+            inputErrors.push(userResolversErrors.newPasswordTooShortInputError)
         }
     }
     return inputErrors;
@@ -59,32 +59,32 @@ export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => 
 
     const USERNAME_GIVEN = inputs.username.length > 0;
     if (!USERNAME_GIVEN) {
-        inputErrors.push(errors.usernameMissingInputError)
+        inputErrors.push(userResolversErrors.usernameMissingInputError)
     } else {
         const USERNAME_SHORT = inputs.username.length <= 2;
         if (USERNAME_SHORT) {
-            inputErrors.push(errors.usernameTooShortInputError)
+            inputErrors.push(userResolversErrors.usernameTooShortInputError)
         }
         const USERNAME_WITH_AT = inputs.username.includes('@');
         if (USERNAME_WITH_AT) {
-            inputErrors.push(errors.usernameContainsAt)
+            inputErrors.push(userResolversErrors.usernameContainsAt)
         }
     }
     const EMAIL_GIVEN = inputs.email.length > 0;
     if (!EMAIL_GIVEN) {
-        inputErrors.push(errors.emailIsMissingInputError)
+        inputErrors.push(userResolversErrors.emailIsMissingInputError)
     } else {
         const EMAIL_VALID = inputs.email.includes('@') && inputs.email.includes('.');
         if (!EMAIL_VALID) {
-            inputErrors.push(errors.emailIsInvalidInputError)
+            inputErrors.push(userResolversErrors.emailIsInvalidInputError)
         }
     }
     const PASSWORD_GIVEN = inputs.password.length > 0;
     if (!PASSWORD_GIVEN) {
-        inputErrors.push(errors.passwordMissingInputError)
+        inputErrors.push(userResolversErrors.passwordMissingInputError)
     } else {
         if (inputs.password.length <= 2) {
-            inputErrors.push(errors.passwordTooShortInputError)
+            inputErrors.push(userResolversErrors.passwordTooShortInputError)
         }
     }
     return inputErrors;

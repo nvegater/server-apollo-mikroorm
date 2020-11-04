@@ -1,7 +1,7 @@
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {PostResolver} from "./resolvers/Post/post";
-import {UserResolver} from "./resolvers/User/resolvers";
+import {UserResolver} from "./resolvers/User/userResolvers";
 import {buildSchema} from "type-graphql";
 import {ExpressContext} from "apollo-server-express/dist/ApolloServer";
 import {EntityManager, MikroORM} from "@mikro-orm/core";

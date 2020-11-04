@@ -1,4 +1,4 @@
-import {FieldError} from "./outputs";
+import {FieldError} from "./userResolversOutputs";
 enum Fields {
     username = "username",
     email = "email",
@@ -8,7 +8,7 @@ enum Fields {
     newPassword = "newPassword"
 }
 
-// User input dependant errors
+// User input dependant userResolversErrors
 const usernameMissingInputError: FieldError = {
     field: Fields.username,
     message: "User already exists"
@@ -52,7 +52,7 @@ const newPasswordTooShortInputError: FieldError = {
     message: "try a better new password" // Dont give the reason of bad password
 }
 
-// Database dependant errors
+// Database dependant userResolversErrors
 const invalidCredentials: FieldError[] = [
     {
         field: Fields.usernameOrEmail,
@@ -82,7 +82,7 @@ const tokenUserError: FieldError = {
     message: 'user not longer exists'
 }
 
-const errors = {
+const userResolversErrors = {
     usernameMissingInputError,
     usernameTooShortInputError,
     usernameContainsAt,
@@ -100,5 +100,5 @@ const errors = {
     tokenUserError
 }
 
-export default errors
+export default userResolversErrors
 

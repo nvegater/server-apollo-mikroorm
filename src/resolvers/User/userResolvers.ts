@@ -1,7 +1,7 @@
 import {Arg, Ctx, Mutation, Query, Resolver} from "type-graphql"
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
-import {FieldError, UserResponse} from "./outputs";
+import {FieldError, UserResponse} from "./userResolversOutputs";
 import {
     ChangePasswordInputs,
     LoginInputs,
@@ -9,13 +9,13 @@ import {
     validateInputsChangePassword,
     validateInputsLogin,
     validateInputsRegister
-} from "./inputs";
+} from "./userResolversInputs";
 import {SessionCookieName} from "../../redis-config";
 import {ApolloORMContext} from "../../apollo-config";
 import {v4 as uuidv4} from "uuid";
 import {sendEmail} from "../../utils/sendEmail";
 import {FORGET_PASSWORD_PREFIX} from "../../constants";
-import errors from "./errors";
+import userResolversErrors from "./userResolversErrors";
 
 
 @Resolver()
@@ -41,11 +41,11 @@ export class UserResolver {
         }
         const userWithUsernameExists: User | null = await postgresORM.findOne(User, {username: registerInputs.username});
         if (userWithUsernameExists) {
-            return {errors: inputErrors.concat(errors.usernameInUseError)}
+            return {errors: inputErrors.concat(userResolversErrors.usernameInUseError)}
         } else {
             const userWithEmailExists: User | null = await postgresORM.findOne(User, {email: registerInputs.email});
             if (userWithEmailExists) {
-                return {errors: inputErrors.concat(errors.emailInUseError)}
+                return {errors: inputErrors.concat(userResolversErrors.emailInUseError)}
             } else {
                 const user = postgresORM.create(User, {
                     username: registerInputs.username,
@@ -76,12 +76,12 @@ export class UserResolver {
 
         if (!user) {
             console.log("Failed because username not existing")
-            return {errors: inputErrors.concat(errors.invalidCredentials)}
+            return {errors: inputErrors.concat(userResolversErrors.invalidCredentials)}
         } else {
             const userPassMatch = await argon2.verify(user.password, loginInputs.password);
             if (!userPassMatch) {
                 console.log("Failed because user there but wrong password")
-                return {errors: inputErrors.concat(errors.invalidCredentials)}
+                return {errors: inputErrors.concat(userResolversErrors.invalidCredentials)}
             } else {
                 req.session!.userId = user.id;
                 return {user: user}
@@ -101,11 +101,11 @@ export class UserResolver {
         const key = FORGET_PASSWORD_PREFIX + changePasswordInputs.token;
         const userId = await redis.get(key);
         if (!userId) {
-            return {errors: inputErrors.concat(errors.tokenExpired)}
+            return {errors: inputErrors.concat(userResolversErrors.tokenExpired)}
         } else {
             const user: User | null = await postgresORM.findOne(User, {id: parseInt(userId)});
             if (!user) {
-                return {errors: inputErrors.concat(errors.tokenUserError)}
+                return {errors: inputErrors.concat(userResolversErrors.tokenUserError)}
             } else {
                 user.password = await argon2.hash(changePasswordInputs.newPassword)
                 //I could update updatedAt but the entity User.ts has a onUpdate hook on this field
