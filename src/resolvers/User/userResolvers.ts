@@ -54,8 +54,6 @@ export class UserResolver {
                     email: registerInputs.email,
                     password: await argon2.hash(registerInputs.password)
                 });
-
-                console.log(user)
                 await user.save();
                 req.session!.userId = user.id;
                 return {user: user}

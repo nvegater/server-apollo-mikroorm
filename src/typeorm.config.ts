@@ -4,9 +4,7 @@ import {ConnectionOptions} from "typeorm";
 
 export default {
     type: 'postgres',
-    database: 'lireddit',
-    username: "admin-p00920345",
-    password: "Gibson.123",
+    database: 'altreddit',
     logging: true,
     synchronize: true,
     entities: [Post, User]
