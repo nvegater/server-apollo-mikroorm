@@ -12,7 +12,7 @@ import {
     validateInputsRegister
 } from "./userResolversInputs";
 import {SessionCookieName} from "../../redis-config";
-import {ApolloORMContext} from "../../apollo-config";
+import {ApolloRedisContext} from "../../apollo-config";
 import {v4 as uuidv4} from "uuid";
 import {sendEmail} from "../../utils/sendEmail";
 import {FORGET_PASSWORD_PREFIX} from "../../constants";
@@ -24,36 +24,39 @@ export class UserResolver {
 
     @Query(() => User, {nullable: true}) //Duplication for Graphql: Post
     async me(
-        @Ctx() {req, postgresORM}: ApolloORMContext
+        @Ctx() {req}: ApolloRedisContext
     ) {
         return req.session!.userId ?
-            await postgresORM.findOne(User, {id: req.session!.userId}) :
+            await User.findOne(req.session!.userId) :
             null;
     }
 
     @Mutation(() => UserResponse)
     async register(
         @Arg("options") registerInputs: RegisterInputs,
-        @Ctx() {req, postgresORM}: ApolloORMContext
+        @Ctx() {req}: ApolloRedisContext
     ): Promise<UserResponse> {
         const inputErrors: FieldError[] = validateInputsRegister(registerInputs);
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
-        const userWithUsernameExists: User | null = await postgresORM.findOne(User, {username: registerInputs.username});
+        const userWithUsernameExists: User | undefined = await User.findOne({where: {username: registerInputs.username}});
         if (userWithUsernameExists) {
             return {errors: inputErrors.concat(userResolversErrors.usernameInUseError)}
         } else {
-            const userWithEmailExists: User | null = await postgresORM.findOne(User, {email: registerInputs.email});
+
+            const userWithEmailExists: User | undefined = await User.findOne({where: {email: registerInputs.email}});
             if (userWithEmailExists) {
                 return {errors: inputErrors.concat(userResolversErrors.emailInUseError)}
             } else {
-                const user = postgresORM.create(User, {
+                const user = User.create({
                     username: registerInputs.username,
                     email: registerInputs.email,
                     password: await argon2.hash(registerInputs.password)
                 });
-                await postgresORM.persistAndFlush(user);
+
+                console.log(user)
+                await user.save();
                 req.session!.userId = user.id;
                 return {user: user}
             }
@@ -63,15 +66,14 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async login(
         @Arg("options") loginInputs: LoginInputs,
-        @Ctx() {req, postgresORM}: ApolloORMContext
+        @Ctx() {req}: ApolloRedisContext
     ): Promise<UserResponse> {
         const inputErrors: FieldError[] = validateInputsLogin(loginInputs);
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
         // TODO combine with WHERE username = ""  or email = ""
-        const user: User | null = await postgresORM.findOne(User,
-            loginInputs.usernameOrEmail.includes('@')
+        const user: User | undefined = await User.findOne(loginInputs.usernameOrEmail.includes('@')
                 ? {email: loginInputs.usernameOrEmail}
                 : {username: loginInputs.usernameOrEmail})
 
@@ -93,7 +95,7 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async changePassword(
         @Arg("options") changePasswordInputs: ChangePasswordInputs,
-        @Ctx() {redis, postgresORM, req}: ApolloORMContext
+        @Ctx() {redis, req}: ApolloRedisContext
     ): Promise<UserResponse> {
         const inputErrors: FieldError[] = validateInputsChangePassword(changePasswordInputs);
         if (inputErrors.length > 0) {
@@ -104,13 +106,16 @@ export class UserResolver {
         if (!userId) {
             return {errors: inputErrors.concat(userResolversErrors.tokenExpired)}
         } else {
-            const user: User | null = await postgresORM.findOne(User, {id: parseInt(userId)});
+            const userIdNum = parseInt(userId);
+            const user: User | undefined = await User.findOne(userIdNum);
             if (!user) {
                 return {errors: inputErrors.concat(userResolversErrors.tokenUserError)}
             } else {
-                user.password = await argon2.hash(changePasswordInputs.newPassword)
-                //I could update updatedAt but the entity User.ts has a onUpdate hook on this field
-                await postgresORM.persistAndFlush(user);
+                await User.update({
+                    id: userIdNum //based on the criteria
+                }, { // update this part of the entity:
+                    password: await argon2.hash(changePasswordInputs.newPassword)
+                });
                 await redis.del(key);
                 // Login automatically
                 req.session!.userId = user.id;
@@ -121,7 +126,7 @@ export class UserResolver {
 
     @Mutation(() => Boolean)
     async logout(
-        @Ctx() {req, res}: ApolloORMContext
+        @Ctx() {req, res}: ApolloRedisContext
     ) {
         return new Promise((resolvePromise) => {
             req.session?.destroy((err) => {
@@ -139,13 +144,13 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async forgotPassword(
         @Arg('email') email: string,
-        @Ctx() {redis, postgresORM}: ApolloORMContext
+        @Ctx() {redis}: ApolloRedisContext
     ) {
         const inputErrors: FieldError[] = validateEmail(email);
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
-        const user = await postgresORM.findOne(User, {email})
+        const user: User | undefined = await User.findOne({where: {email}}) // not primary key, so "where" needed
         if (!user) {
             // email not in DB but just do nothing
             return true
