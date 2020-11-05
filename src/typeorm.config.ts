@@ -5,7 +5,7 @@ import {ConnectionOptions} from "typeorm";
 export default {
     type: 'postgres',
     database: 'altreddit',
-    logging: true,
+    logging: true, // log SQL
     synchronize: true,
     entities: [Post, User]
 } as ConnectionOptions
