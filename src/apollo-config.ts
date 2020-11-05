@@ -3,7 +3,7 @@ import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
 import {PostResolver} from "./resolvers/Post/post";
 import {UserResolver} from "./resolvers/User/userResolvers";
 import {buildSchema} from "type-graphql";
-import {ExpressContext} from "apollo-server-express/dist/ApolloServer";
+import {ApolloServerExpressConfig, ExpressContext} from "apollo-server-express/dist/ApolloServer";
 import {EntityManager, MikroORM} from "@mikro-orm/core";
 import {Redis as RedisType, Redis} from "ioredis";
 import {ContextFunction} from "apollo-server-core";
@@ -39,8 +39,18 @@ interface CustomContext extends ExpressContext {
     redisContext: Redis;
 }
 
+interface CustomContextRedis extends ExpressContext {
+    redisContext: Redis;
+}
+
 export type ApolloORMContext = {
     postgresORM: EntityManager;
+    req: Request;
+    res: Response;
+    redis: Redis;
+}
+
+export type ApolloRedisContext = {
     req: Request;
     res: Response;
     redis: Redis;
@@ -53,7 +63,7 @@ export interface ExpressORMRedisApolloConfig extends Config {
 }
 
 // ContextFunction<Params, ReturnType>
-const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
+const buildMikroOrmContext: ContextFunction<CustomContext, ApolloORMContext> =
     (customContext) =>
         ({
             req: customContext.req,
@@ -63,7 +73,14 @@ const buildContext: ContextFunction<CustomContext, ApolloORMContext> =
         });
 
 
-export const buildApolloConfig =
+const buildRedisExpressContext: ContextFunction<CustomContextRedis, ApolloRedisContext> =
+    (customContext) =>
+        ({
+            req: customContext.req,
+            res: customContext.res,
+            redis: customContext.redisContext
+        });
+export const mikroOrmApolloContextConfig =
     async (orm: MikroORM, redisClient: RedisType): Promise<ExpressORMRedisApolloConfig> => {
     const graphqlSchemas = await buildSchemas();
     const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
@@ -78,7 +95,27 @@ export const buildApolloConfig =
     return {
         schema: graphqlSchemas,
         context: ({req, res}) =>
-            buildContext({req, res, orm: orm, redisContext: redisClient}),
+            buildMikroOrmContext({req, res, orm: orm, redisContext: redisClient}),
+        playground: playGroundConfig,
+    }
+}
+
+export const apolloExpressRedisContext =
+    async (redisClient: RedisType): Promise<ApolloServerExpressConfig> => {
+    const graphqlSchemas = await buildSchemas();
+    const playGroundConfig: PlaygroundConfig = process.env.NODE_ENV === 'production'
+        ? false
+        : {
+            settings: {
+                //default is 'omit'
+                // Always same credentials for multiple-playground requests in Dev mode.
+                'request.credentials': 'include',
+            },
+        };
+    return {
+        schema: graphqlSchemas,
+        context: ({req, res}) =>
+            buildRedisExpressContext({req, res, redisContext: redisClient}),
         playground: playGroundConfig,
     }
 }
