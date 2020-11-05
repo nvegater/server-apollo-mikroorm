@@ -53,6 +53,19 @@ export const validateInputsChangePassword = (inputs: ChangePasswordInputs): Fiel
     }
     return inputErrors;
 }
+export const validateEmail = (email:string): FieldError[] => {
+    let inputErrors: FieldError[] = [];
+    const EMAIL_GIVEN = email.length > 0;
+    if (!EMAIL_GIVEN) {
+        inputErrors.push(userResolversErrors.emailIsMissingInputError)
+    } else {
+        const EMAIL_VALID = email.includes('@') && email.includes('.');
+        if (!EMAIL_VALID) {
+            inputErrors.push(userResolversErrors.emailIsInvalidInputError)
+        }
+    }
+    return inputErrors
+}
 
 export const validateInputsRegister = (inputs: RegisterInputs): FieldError[] => {
     let inputErrors: FieldError[] = [];

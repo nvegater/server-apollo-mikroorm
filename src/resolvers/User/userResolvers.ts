@@ -6,6 +6,7 @@ import {
     ChangePasswordInputs,
     LoginInputs,
     RegisterInputs,
+    validateEmail,
     validateInputsChangePassword,
     validateInputsLogin,
     validateInputsRegister
@@ -135,11 +136,15 @@ export class UserResolver {
         })
     }
 
-    @Mutation(() => Boolean)
+    @Mutation(() => UserResponse)
     async forgotPassword(
         @Arg('email') email: string,
         @Ctx() {redis, postgresORM}: ApolloORMContext
     ) {
+        const inputErrors: FieldError[] = validateEmail(email);
+        if (inputErrors.length > 0) {
+            return {errors: inputErrors}
+        }
         const user = await postgresORM.findOne(User, {email})
         if (!user) {
             // email not in DB but just do nothing
@@ -152,7 +157,7 @@ export class UserResolver {
             "ex", // that expires
             THREE_DAYS_MS); // after 3 days
         await sendEmail(email, `<a href="http://localhost:3000/change-password/${token}"> reset password </a>`)
-        return true
+        return {user: user}
     }
 
 
