@@ -1,4 +1,5 @@
 import express, {Express, RequestHandler} from "express";
+import "reflect-metadata"
 
 import cors from "cors"
 import {corsConfig} from "./express-config";
@@ -8,12 +9,15 @@ import connectRedis, {RedisStore} from 'connect-redis';
 import Redis, {Redis as RedisType} from 'ioredis';
 import {buildRedisSession} from "./redis-config";
 
-
-import {MikroORM} from "@mikro-orm/core"
-import mikroPostgresConfiguration from "./mikro-orm.config"
+import {createConnection} from "typeorm";
+import typeOrmPostgresConfig from "./typeorm.config"
 
 import {ApolloServer} from "apollo-server-express";
-import {registerExpressServer, buildApolloConfig, ExpressORMRedisApolloConfig} from "./apollo-config";
+import {
+    registerExpressServer,
+    apolloExpressRedisContext
+} from "./apollo-config";
+import {ApolloServerExpressConfig} from "apollo-server-express/dist/ApolloServer";
 
 
 const start_server = async () => {
@@ -30,12 +34,12 @@ const start_server = async () => {
     const redisRequestHandler: RequestHandler = session(buildRedisSession(redisStore, redisClient));
     app.use(redisRequestHandler);
 
-    // MikroORM
-    const postgresORM: MikroORM = await MikroORM.init(mikroPostgresConfiguration);
-    await postgresORM.getMigrator().up();
+    // TypeORM
+    await createConnection(typeOrmPostgresConfig);
 
     // Apollo
-    const apolloConfig: ExpressORMRedisApolloConfig = await buildApolloConfig(postgresORM, redisClient);
+    const apolloConfig: ApolloServerExpressConfig = await apolloExpressRedisContext(redisClient);
+
     new ApolloServer(apolloConfig)
         .applyMiddleware(registerExpressServer(app))
 
