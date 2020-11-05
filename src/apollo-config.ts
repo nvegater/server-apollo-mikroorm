@@ -1,6 +1,6 @@
 import {PlaygroundConfig} from "apollo-server-core/src/playground";
 import {NonEmptyArray} from "type-graphql/dist/interfaces/NonEmptyArray";
-import {PostResolver} from "./resolvers/Post/post";
+import {PostResolver} from "./resolvers/Post/postResolvers";
 import {UserResolver} from "./resolvers/User/userResolvers";
 import {buildSchema} from "type-graphql";
 import {ApolloServerExpressConfig, ExpressContext} from "apollo-server-express/dist/ApolloServer";
