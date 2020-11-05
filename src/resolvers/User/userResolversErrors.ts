@@ -74,7 +74,7 @@ const emailInUseError: FieldError = {
 
 const tokenExpired: FieldError = {
     field: Fields.token,
-    message: 'token expired'
+    message: 'Request to change password expired'
 }
 
 const tokenUserError: FieldError = {
