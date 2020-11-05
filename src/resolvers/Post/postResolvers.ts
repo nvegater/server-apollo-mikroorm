@@ -19,7 +19,6 @@ export class PostResolver {
     async createPost(
         @Arg('title') title: string,
     ): Promise<Post> {
-        // 2 SQL Queries one to select and one to insert
         return Post.create({title}).save();
     }
 
