@@ -21,6 +21,14 @@ export class Post extends BaseEntity {
     @Column()
     title!: string;
 
+    @Field()
+    @Column()
+    text!: string;
+
+    @Field()
+    @Column({type: "int", default: 0})
+    points!: string;
+
     //FK
     @Field()
     @Column()
