@@ -1,5 +1,13 @@
 import {Field, Int, ObjectType} from "type-graphql";
-import {BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn} from "typeorm";
+import {
+    BaseEntity,
+    Column,
+    CreateDateColumn,
+    Entity, ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn
+} from "typeorm";
+import {User} from "./User";
 
 @ObjectType()
 @Entity()
@@ -9,17 +17,24 @@ export class Post extends BaseEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Field(() => String)
-    @CreateDateColumn()
-    createdAt:Date;
-
-    @Field(() => String)
-    @UpdateDateColumn()
-    updatedAt:Date;
-
-    // If I dont want to expose a field I can just comment out the field decorator
     @Field()
     @Column()
     title!: string;
 
+    //FK
+    @Field()
+    @Column()
+    creatorId: number;
+
+    // Multiple posts can belong to one user
+    @ManyToOne(() => User, user => user.post)
+    creator: User;
+
+    @Field(() => String)
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @Field(() => String)
+    @UpdateDateColumn()
+    updatedAt: Date;
 }
