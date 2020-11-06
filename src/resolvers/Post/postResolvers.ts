@@ -1,5 +1,10 @@
-import {Arg, Int, Mutation, Query, Resolver} from "type-graphql"
+import {Arg, Ctx, Int, Mutation, Query, Resolver} from "type-graphql"
 import {Post} from "../../entities/Post";
+import {CreatePostInputs, validateCreatePostInputs} from "./postResolversInputs";
+import {FieldError} from "../User/userResolversOutputs";
+import {ApolloRedisContext} from "../../apollo-config";
+import {PostResponse} from "./postResolversOutputs";
+import postResolversErrors from "./postResolversErrors";
 
 @Resolver()
 export class PostResolver {
@@ -15,11 +20,24 @@ export class PostResolver {
         return Post.findOne(id);
     }
 
-    @Mutation(() => Post)
+    @Mutation(() => PostResponse)
     async createPost(
-        @Arg('title') title: string,
-    ): Promise<Post> {
-        return Post.create({title}).save();
+        @Arg('options') createPostInputs: CreatePostInputs,
+        @Ctx() {req}: ApolloRedisContext
+    ): Promise<PostResponse> {
+        const inputErrors: FieldError[] = validateCreatePostInputs(createPostInputs);
+        if (inputErrors.length > 0) {
+            return {errors: inputErrors}
+        }
+        const loggedInUserId:string | undefined = req.session!.userId;
+        if (loggedInUserId !== undefined) {
+            const postPromise = await Post
+                .create({...createPostInputs, creatorId: parseInt(loggedInUserId),
+                    }).save();
+            return {post: postPromise};
+        } else {
+            return {errors: inputErrors.concat(postResolversErrors.userNotLoggedInError)}
+        }
     }
 
     @Mutation(() => Post, {nullable: true})
