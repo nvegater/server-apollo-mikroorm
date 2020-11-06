@@ -1,10 +1,10 @@
-import {Arg, Ctx, Int, Mutation, Query, Resolver} from "type-graphql"
+import {Arg, Ctx, Int, Mutation, Query, Resolver, UseMiddleware} from "type-graphql"
 import {Post} from "../../entities/Post";
 import {CreatePostInputs, validateCreatePostInputs} from "./postResolversInputs";
 import {FieldError} from "../User/userResolversOutputs";
 import {ApolloRedisContext} from "../../apollo-config";
 import {PostResponse} from "./postResolversOutputs";
-import postResolversErrors from "./postResolversErrors";
+import {isAuth} from "../Universal/utils";
 
 @Resolver()
 export class PostResolver {
@@ -21,6 +21,7 @@ export class PostResolver {
     }
 
     @Mutation(() => PostResponse)
+    @UseMiddleware(isAuth)
     async createPost(
         @Arg('options') createPostInputs: CreatePostInputs,
         @Ctx() {req}: ApolloRedisContext
@@ -29,15 +30,12 @@ export class PostResolver {
         if (inputErrors.length > 0) {
             return {errors: inputErrors}
         }
-        const loggedInUserId:string | undefined = req.session!.userId;
-        if (loggedInUserId !== undefined) {
-            const postPromise = await Post
-                .create({...createPostInputs, creatorId: parseInt(loggedInUserId),
-                    }).save();
-            return {post: postPromise};
-        } else {
-            return {errors: inputErrors.concat(postResolversErrors.userNotLoggedInError)}
-        }
+        const postPromise = await Post
+            .create({
+                ...createPostInputs,
+                creatorId: parseInt(req.session!.userId),
+            }).save();
+        return {post: postPromise};
     }
 
     @Mutation(() => Post, {nullable: true})
