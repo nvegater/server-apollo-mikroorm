@@ -1,4 +1,4 @@
-import {Arg, Ctx, Mutation, Query, Resolver} from "type-graphql"
+import {Arg, Ctx, Mutation, Query, Resolver, UseMiddleware} from "type-graphql"
 import {User} from "../../entities/User";
 import argon2 from 'argon2'
 import {FieldError, UserResponse} from "./userResolversOutputs";
@@ -17,18 +17,18 @@ import {v4 as uuidv4} from "uuid";
 import {sendEmail} from "../../utils/sendEmail";
 import {FORGET_PASSWORD_PREFIX} from "../../constants";
 import userResolversErrors from "./userResolversErrors";
+import {isAuth} from "../Universal/utils";
 
 
 @Resolver()
 export class UserResolver {
 
-    @Query(() => User, {nullable: true}) //Duplication for Graphql: Post
+    @Query(() => UserResponse, {nullable: true})
+    @UseMiddleware(isAuth)
     async me(
         @Ctx() {req}: ApolloRedisContext
-    ) {
-        return req.session!.userId ?
-            await User.findOne(req.session!.userId) :
-            null;
+    ): Promise<UserResponse> {
+        return {user: await User.findOne(req.session!.userId)};
     }
 
     @Mutation(() => UserResponse)
@@ -72,8 +72,8 @@ export class UserResolver {
         }
         // TODO combine with WHERE username = ""  or email = ""
         const user: User | undefined = await User.findOne(loginInputs.usernameOrEmail.includes('@')
-                ? {email: loginInputs.usernameOrEmail}
-                : {username: loginInputs.usernameOrEmail})
+            ? {email: loginInputs.usernameOrEmail}
+            : {username: loginInputs.usernameOrEmail})
 
         if (!user) {
             console.log("Failed because username not existing")
