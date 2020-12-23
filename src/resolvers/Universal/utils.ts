@@ -5,6 +5,7 @@ import postResolversErrors from "../Post/postResolversErrors";
 // Middleware runs before each resolver
 // check if the user is logged in.
 export const isAuth: MiddlewareFn<ApolloRedisContext> = async ({context}, next) => {
+    // @ts-ignore
     const loggedInUserId: string | undefined = context.req.session!.userId;
     if (!loggedInUserId) {
         return {errors: [postResolversErrors.userNotLoggedInError]}

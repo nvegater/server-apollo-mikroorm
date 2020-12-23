@@ -28,7 +28,10 @@ export class UserResolver {
     async me(
         @Ctx() {req}: ApolloRedisContext
     ): Promise<UserResponse> {
-        return {user: await User.findOne(req.session!.userId)};
+        // @ts-ignore
+        const userIdFromSession = req.session.userId;
+
+        return {user: await User.findOne(userIdFromSession)};
     }
 
     @Mutation(() => UserResponse)
@@ -55,7 +58,10 @@ export class UserResolver {
                     password: await argon2.hash(registerInputs.password)
                 });
                 await user.save();
-                req.session!.userId = user.id;
+
+                // @ts-ignore
+                req.session.userId = user.id;
+
                 return {user: user}
             }
         }
@@ -84,7 +90,10 @@ export class UserResolver {
                 console.log("Failed because user there but wrong password")
                 return {errors: inputErrors.concat(userResolversErrors.invalidCredentials)}
             } else {
-                req.session!.userId = user.id;
+
+                // @ts-ignore
+                req.session.userId = user.id;
+
                 return {user: user}
             }
         }
@@ -116,7 +125,10 @@ export class UserResolver {
                 });
                 await redis.del(key);
                 // Login automatically
-                req.session!.userId = user.id;
+
+                // @ts-ignore
+                req.session.userId = user.id;
+
                 return {user: user}
             }
         }

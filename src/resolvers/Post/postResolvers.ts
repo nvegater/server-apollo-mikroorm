@@ -33,7 +33,8 @@ export class PostResolver {
         const postPromise = await Post
             .create({
                 ...createPostInputs,
-                creatorId: parseInt(req.session!.userId),
+                // @ts-ignore
+                creatorId: req.session.userId,
             }).save();
         return {post: postPromise};
     }
